@@ -70,3 +70,9 @@ class StatsResponse(BaseModel):
     hours_studied: float
     pct: int
     by_phase: list[PhaseStats]
+    # v2.0 — Labs Zabbix extras (opcionais para compatibilidade)
+    total_labs_zabbix: Optional[int] = 0
+    labs_completed: Optional[int] = 0
+    labs_pct: Optional[int] = 0
+    days_remaining: Optional[int] = None
+    expected_completion: Optional[str] = None

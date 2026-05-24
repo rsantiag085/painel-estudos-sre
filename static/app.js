@@ -159,11 +159,12 @@ function navigateTo(view) {
   });
 
   const headers = {
-    dashboard:    { title: '⬡ Dashboard',      meta: 'Visão geral · escala 12x36 · Mai–Dez 2026' },
-    cronograma:   { title: '📅 Cronograma',     meta: '36 semanas · 5 fases · datas reais da escala' },
-    milestones:   { title: '✓ Milestones',      meta: 'Checkpoints por fase' },
-    estatisticas: { title: '📊 Estatísticas',   meta: 'Horas, distribuição, progresso por fase' },
-    exportar:     { title: '📤 Exportar',        meta: 'Backup do seu progresso' },
+    dashboard:    { title: '⬡ Dashboard',       meta: 'Visão geral · escala 12x36 · Mai–Dez 2026' },
+    cronograma:   { title: '📅 Cronograma',      meta: '36 semanas · 5 fases · datas reais da escala' },
+    milestones:   { title: '✓ Milestones',       meta: 'Checkpoints por fase' },
+    zabbixlabs:   { title: '🧪 Labs Zabbix',     meta: '30 labs semanais · expertise em monitoramento' },
+    estatisticas: { title: '📊 Estatísticas',    meta: 'Horas, distribuição, progresso por fase' },
+    exportar:     { title: '📤 Exportar',         meta: 'Backup do seu progresso' },
   };
 
   const h = headers[view] || headers.dashboard;
@@ -174,6 +175,7 @@ function navigateTo(view) {
     dashboard:    renderDashboard,
     cronograma:   renderCronograma,
     milestones:   renderMilestones,
+    zabbixlabs:   renderZabbixLabs,
     estatisticas: renderEstatisticas,
     exportar:     renderExportar,
   };
@@ -184,10 +186,11 @@ function navigateTo(view) {
 function tagHtml(tag) {
   if (!tag) return '';
   const map = {
-    lab:  ['LAB',    'tag-lab'],
-    free: ['FREE',   'tag-free'],
-    book: ['LIVRO',  'tag-book'],
-    aws:  ['AWS',    'tag-aws'],
+    lab:    ['LAB',     'tag-lab'],
+    free:   ['FREE',    'tag-free'],
+    book:   ['LIVRO',   'tag-book'],
+    aws:    ['AWS',     'tag-aws'],
+    zabbix: ['🧪 ZABBIX', 'tag-zabbix'],  // v2.0
   };
   const [label, cls] = map[tag] || [tag.toUpperCase(), ''];
   return `<span class="lesson-tag ${cls}">${label}</span>`;
@@ -209,9 +212,10 @@ function lessonCardHtml(lesson, lid, weekNum, date, idx) {
   const note = progress?.note || '';
   const cls = status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : '';
   const icon = status === 'done' ? '✓ ' : status === 'skipped' ? '✗ ' : '';
+  const dataTag = lesson.tag ? `data-tag="${lesson.tag}"` : '';
 
   return `
-    <div class="lesson-card ${cls}" onclick="openLessonModal(${weekNum},'${date}',${idx})">
+    <div class="lesson-card ${cls}" ${dataTag} onclick="openLessonModal(${weekNum},'${date}',${idx})">
       <div class="lesson-name">${icon}${lesson.name}</div>
       <div class="lesson-meta">
         <span class="lesson-hours">${lesson.h}h</span>
@@ -1001,6 +1005,7 @@ async function saveLesson() {
     // Re-renderizar a view atual
     if (State.currentView === 'dashboard') renderDashboard();
     else if (State.currentView === 'cronograma') renderCronograma();
+    else if (State.currentView === 'zabbixlabs') renderZabbixLabs();
   } catch (e) {
     showToast('Erro ao salvar', true);
   }
@@ -1018,6 +1023,82 @@ function showToast(msg, isError = false) {
   t.className = isError ? 'error' : '';
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── VIEW: Labs Zabbix ────────────────────────────────────────────────────────
+function renderZabbixLabs() {
+  // Coletar todos os labs Zabbix do curriculo
+  const labs = [];
+  for (const [wNum, wData] of Object.entries(WEEKS)) {
+    for (const [date, dateData] of Object.entries(wData.dates)) {
+      dateData.lessons.forEach((lesson, i) => {
+        if (lesson.tag === 'zabbix') {
+          const lid = `${date}-${i}`;
+          const p = State.progress[lid] || { status: 'pending', note: '' };
+          labs.push({
+            weekNum: parseInt(wNum),
+            label: wData.label || `S${wNum}`,
+            date,
+            idx: i,
+            lesson,
+            lid,
+            status: p.status,
+          });
+        }
+      });
+    }
+  }
+
+  // Ordenar por semana
+  labs.sort((a, b) => a.weekNum - b.weekNum || a.date.localeCompare(b.date));
+
+  const total = labs.length;
+  const done  = labs.filter(l => l.status === 'done').length;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+
+  let html = `
+    <div class="zabbix-header-card">
+      <div class="zabbix-icon-area">🧪</div>
+      <div class="zabbix-info">
+        <h2>Labs Zabbix — 30 Semanas</h2>
+        <p>1 lab por semana · expertise em monitoramento · diferencial de carreira</p>
+        <div class="zabbix-prog-bar" style="margin-top:10px">
+          <div class="zabbix-prog-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="zabbix-pct-block">
+        <div class="zabbix-pct-num">${pct}%</div>
+        <div class="zabbix-pct-label">${done}/${total} labs</div>
+      </div>
+    </div>
+
+    <div class="zabbix-stats-row">
+      <div class="zabbix-stat"><div class="val">${total}</div><div class="lbl">Total Labs</div></div>
+      <div class="zabbix-stat"><div class="val" style="color:var(--green)">${done}</div><div class="lbl">Concluídos</div></div>
+      <div class="zabbix-stat"><div class="val" style="color:var(--muted)">${total - done}</div><div class="lbl">Pendentes</div></div>
+      <div class="zabbix-stat"><div class="val">${pct}%</div><div class="lbl">Progresso</div></div>
+    </div>
+
+    <div class="section-title">Lista de Labs — S05 a S34</div>
+    <div class="zabbix-lab-list">
+  `;
+
+  labs.forEach((item, idx) => {
+    const labNum = String(idx + 1).padStart(2, '0');
+    const statusIcon = item.status === 'done' ? '✓' : item.status === 'skipped' ? '✗' : '○';
+    html += `
+      <div class="zabbix-lab-item ${item.status}"
+           onclick="openLessonModal(${item.weekNum},'${item.date}',${item.idx})">
+        <div class="zabbix-lab-num">#${labNum}</div>
+        <div class="zabbix-lab-week">${item.label}</div>
+        <div class="zabbix-lab-name">${item.lesson.name.replace('🧪 ', '')}</div>
+        <div class="zabbix-lab-status">${statusIcon}</div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  document.getElementById('view-content').innerHTML = html;
 }
 
 // ── Start ────────────────────────────────────────────────────────────────────

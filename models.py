@@ -13,6 +13,10 @@ class LessonProgress(Base):
     lesson_id = Column(String, unique=True, nullable=False, index=True)
     status = Column(String, default="pending")   # 'pending' | 'done' | 'skipped'
     note = Column(Text, default="")
+    # v2.0 — novos campos
+    week_num = Column(Integer, nullable=True)    # Semana (1–36)
+    lab_type = Column(String, nullable=True)     # 'aula' | 'lab' | 'leitura' | 'projeto' | 'revisao'
+    course_url = Column(String, nullable=True)   # URL do curso
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
