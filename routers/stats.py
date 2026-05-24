@@ -3,6 +3,7 @@ routers/stats.py — Endpoint de estatísticas agregadas
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from datetime import date as date_type
 
 from database import get_db
 from models import LessonProgress
@@ -24,6 +25,9 @@ def get_stats(db: Session = Depends(get_db)):
     folga_days_studied = 0
     total = 0
     hours_studied = 0.0
+    # v2.0 — Labs Zabbix tracking
+    labs_total = 0
+    labs_done = 0
 
     by_phase = []
     for phase_num, phase_data in PHASES.items():
@@ -39,6 +43,11 @@ def get_stats(db: Session = Depends(get_db)):
                     status = progress_map.get(lid, "pending")
                     total += 1
                     ph_total += 1
+                    # Contar labs Zabbix
+                    if lesson.get("tag") == "zabbix":
+                        labs_total += 1
+                        if status == "done":
+                            labs_done += 1
                     if status == "done":
                         done += 1
                         ph_done += 1
@@ -57,6 +66,11 @@ def get_stats(db: Session = Depends(get_db)):
 
     global_pct = round(done / total * 100) if total else 0
 
+    # v2.0 — Calcular dias restantes até 08/01/2027
+    today = date_type.today()
+    end_date = date_type(2027, 1, 8)
+    days_remaining = max(0, (end_date - today).days)
+
     return StatsResponse(
         done=done,
         total=total,
@@ -65,7 +79,14 @@ def get_stats(db: Session = Depends(get_db)):
         hours_studied=round(hours_studied, 1),
         pct=global_pct,
         by_phase=by_phase,
+        # v2.0 extras
+        total_labs_zabbix=labs_total,
+        labs_completed=labs_done,
+        labs_pct=round(labs_done / labs_total * 100) if labs_total else 0,
+        days_remaining=days_remaining,
+        expected_completion="2027-01-08",
     )
+
 
 
 @router.get("/export")
