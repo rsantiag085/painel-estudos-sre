@@ -44,6 +44,23 @@
   /* ── AWS ── */
   --aws:      #FF9900;
 
+  /* ── Trabalho / Plantão 12×36 ── */
+  --work:     #9b78e8;
+  --work-bg:  #0f0a20;
+
+  /* ── Escala 12x36: tipos de dia ── */
+  --folga:      #00e5a0;   /* Verde — dia de folga = estudo 4h */
+  --folga-bg:   #001a10;
+  --folga-dim:  rgba(0,229,160,0.08);
+  --trabalho:   #ff6b35;   /* Laranja — dia de trabalho = passivo 0.5h */
+  --trabalho-bg:#1a0a00;
+  --trabalho-dim:rgba(255,107,53,0.08);
+
+  /* ── Blocos de estudo ── */
+  --manha-color:  #00d4ff;  /* Cyan — manhã */
+  --tarde-color:  #5b8dee;  /* Azul — tarde */
+  --passivo-color:#ffab40;  /* Âmbar — passivo */
+
   /* ── Tipografia ── */
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Syne', 'Inter', sans-serif;
@@ -678,8 +695,15 @@ body {
 
 .days-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 10px;
+}
+
+/* Sábado e Domingo com cor levemente diferente */
+.day-col:nth-child(6) .day-name,
+.day-col:nth-child(7) .day-name {
+  color: var(--yellow);
+  border-bottom-color: rgba(255,171,64,0.3);
 }
 
 .day-col {}
@@ -768,6 +792,19 @@ body {
 
 .lesson-card.skipped:hover { border-color: var(--red); }
 
+.lesson-card.work {
+  background: var(--work-bg);
+  border-color: #3d2870;
+}
+
+.lesson-card.work:hover { border-color: var(--work); }
+
+.lesson-card.postponed {
+  background: var(--work-bg);
+  border: 1px dashed #3d2870;
+  opacity: 0.9;
+}
+
 .lesson-name {
   font-size: 11px;
   font-weight: 500;
@@ -778,6 +815,8 @@ body {
 
 .lesson-card.done .lesson-name { color: var(--green); }
 .lesson-card.skipped .lesson-name { color: var(--red); opacity: 0.75; text-decoration: line-through; }
+.lesson-card.work .lesson-name { color: var(--work); opacity: 0.85; }
+.lesson-card.postponed .lesson-name { color: var(--work); }
 
 .lesson-meta {
   display: flex;
@@ -894,6 +933,7 @@ body {
 .status-opt.sel-done    { border-color: var(--green); background: var(--green-bg); }
 .status-opt.sel-skipped { border-color: var(--red);   background: var(--red-bg); }
 .status-opt.sel-pending { border-color: var(--muted); }
+.status-opt.sel-work    { border-color: var(--work);  background: var(--work-bg); }
 
 .status-opt-label {
   font-size: 12px;
@@ -1229,6 +1269,78 @@ body {
   white-space: nowrap;
 }
 
+/* ── WORK DAY STYLES ────────────────────────────────────────────────────── */
+.day-name.work-day {
+  color: var(--work);
+  border-bottom-color: #3d2870;
+}
+
+.work-day-banner {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--work);
+  background: var(--work-bg);
+  border: 1px solid #3d2870;
+  border-radius: 2px;
+  padding: 3px 6px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.postponed-badge {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  color: var(--work);
+  background: var(--work-bg);
+  border: 1px solid #3d2870;
+  border-radius: 2px;
+  padding: 1px 5px;
+  display: inline-block;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.work-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.work-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--work-bg);
+  border: 1px solid #3d2870;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.work-item:hover { border-color: var(--work); }
+
+.work-item .work-icon { font-size: 12px; flex-shrink: 0; }
+
+.work-item .work-name {
+  font-size: 12px;
+  color: var(--work);
+  flex: 1;
+  line-height: 1.3;
+}
+
+.work-item .work-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #5a4090;
+  white-space: nowrap;
+}
+
+.stat-card.purple .val { color: var(--work); }
+
 /* ── CURRENT WEEK SECTION ───────────────────────────────────────────────── */
 .current-week-card {
   background: var(--surface);
@@ -1302,4 +1414,298 @@ body {
   border-top-color: var(--cyan);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
+}
+
+/* ── DATES GRID (substitui days-grid, modelo por datas) ─────────────────── */
+.dates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+/* ── DATE COLUMN ────────────────────────────────────────────────────────── */
+.date-col {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.date-col.folga {
+  border-color: rgba(0,229,160,0.2);
+}
+
+.date-col.trabalho {
+  border-color: rgba(255,107,53,0.18);
+  opacity: 0.85;
+}
+
+.date-col.today-col {
+  border-color: var(--cyan) !important;
+  box-shadow: 0 0 12px rgba(0,212,255,0.2);
+}
+
+.date-col-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 7px 9px 6px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.date-col.folga .date-col-header {
+  background: var(--folga-bg);
+  border-bottom-color: rgba(0,229,160,0.2);
+}
+
+.date-col.trabalho .date-col-header {
+  background: var(--trabalho-bg);
+  border-bottom-color: rgba(255,107,53,0.15);
+}
+
+.date-col.today-col .date-col-header {
+  background: var(--cyan-bg);
+  border-bottom-color: rgba(0,212,255,0.3);
+}
+
+.date-col-day {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+.date-col.folga .date-col-day { color: var(--folga); }
+.date-col.trabalho .date-col-day { color: var(--trabalho); }
+.date-col.today-col .date-col-day { color: var(--cyan); }
+
+.date-col-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+
+.date-col.folga .date-col-num { color: var(--folga); }
+.date-col.trabalho .date-col-num { color: var(--trabalho); }
+.date-col.today-col .date-col-num { color: var(--cyan); }
+
+.date-type-chip {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.date-type-chip.folga {
+  background: var(--folga-dim);
+  color: var(--folga);
+  border: 1px solid rgba(0,229,160,0.25);
+}
+
+.date-type-chip.trabalho {
+  background: var(--trabalho-dim);
+  color: var(--trabalho);
+  border: 1px solid rgba(255,107,53,0.25);
+}
+
+.date-col-lessons {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+/* ── TODAY CARD (dashboard) ─────────────────────────────────────────────── */
+.today-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.today-card.folga {
+  border-color: rgba(0,229,160,0.3);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--folga-bg) 100%);
+}
+
+.today-card.trabalho {
+  border-color: rgba(255,107,53,0.25);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--trabalho-bg) 100%);
+}
+
+.today-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.today-date-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.today-weekday {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.today-date {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.today-type-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.today-type-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.today-type-badge.folga {
+  background: var(--folga-dim);
+  color: var(--folga);
+  border: 1px solid rgba(0,229,160,0.4);
+  box-shadow: 0 0 10px rgba(0,229,160,0.15);
+}
+
+.today-type-badge.trabalho {
+  background: var(--trabalho-dim);
+  color: var(--trabalho);
+  border: 1px solid rgba(255,107,53,0.35);
+}
+
+.today-hours {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.today-progress-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.today-done {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--green);
+  line-height: 1;
+}
+
+.today-done-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.today-lessons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.today-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.today-block-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── BLOCK BADGES (manhã / tarde / passivo) ─────────────────────────────── */
+.block-badge {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.block-manha {
+  background: rgba(0,212,255,0.1);
+  color: var(--manha-color);
+  border: 1px solid rgba(0,212,255,0.2);
+}
+
+.block-tarde {
+  background: rgba(91,141,238,0.1);
+  color: var(--tarde-color);
+  border: 1px solid rgba(91,141,238,0.2);
+}
+
+.block-passivo {
+  background: rgba(255,171,64,0.1);
+  color: var(--passivo-color);
+  border: 1px solid rgba(255,171,64,0.2);
+}
+
+/* ── MODAL SUB — tipo de dia ─────────────────────────────────────────────── */
+.m-type-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
+.m-type-badge.folga {
+  background: var(--folga-dim);
+  color: var(--folga);
+  border: 1px solid rgba(0,229,160,0.3);
+}
+
+.m-type-badge.trabalho {
+  background: var(--trabalho-dim);
+  color: var(--trabalho);
+  border: 1px solid rgba(255,107,53,0.3);
 }

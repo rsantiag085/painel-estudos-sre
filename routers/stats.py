@@ -7,31 +7,24 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import LessonProgress
 from schemas import StatsResponse, PhaseStats
-from data.curriculum import PHASES, WEEKS, get_phase_for_week
+from data.curriculum import PHASES, WEEKS
 
 router = APIRouter(prefix="/api", tags=["stats"])
-
-DAYS_ORDER = ["seg", "ter", "qua", "qui", "sex"]
 
 
 @router.get("/stats", response_model=StatsResponse)
 def get_stats(db: Session = Depends(get_db)):
-    """Retorna estatísticas globais e por fase."""
-    # Carregar todo o progresso salvo
     progress_map: dict[str, str] = {}
-    hours_map: dict[str, float] = {}
-
     rows = db.query(LessonProgress).all()
     for r in rows:
         progress_map[r.lesson_id] = r.status
 
-    # Calcular totais globais
     done = 0
     skipped = 0
+    folga_days_studied = 0
     total = 0
     hours_studied = 0.0
 
-    # Calcular por fase
     by_phase = []
     for phase_num, phase_data in PHASES.items():
         ph_done = 0
@@ -40,10 +33,9 @@ def get_stats(db: Session = Depends(get_db)):
             week = WEEKS.get(week_num)
             if not week:
                 continue
-            for day in DAYS_ORDER:
-                lessons = week["days"].get(day, [])
-                for idx, lesson in enumerate(lessons):
-                    lid = f"w{week_num}-{day}-{idx}"
+            for date, date_data in week["dates"].items():
+                for idx, lesson in enumerate(date_data["lessons"]):
+                    lid = f"{date}-{idx}"
                     status = progress_map.get(lid, "pending")
                     total += 1
                     ph_total += 1
@@ -69,7 +61,8 @@ def get_stats(db: Session = Depends(get_db)):
         done=done,
         total=total,
         skipped=skipped,
-        hours_studied=hours_studied,
+        work_days=folga_days_studied,
+        hours_studied=round(hours_studied, 1),
         pct=global_pct,
         by_phase=by_phase,
     )
@@ -77,7 +70,6 @@ def get_stats(db: Session = Depends(get_db)):
 
 @router.get("/export")
 def export_data(db: Session = Depends(get_db)):
-    """Retorna JSON completo do estado atual para backup."""
     from models import WeekNote, Milestone
     from datetime import datetime
 
@@ -118,10 +110,8 @@ def export_data(db: Session = Depends(get_db)):
 
 @router.post("/import")
 def import_data(data: dict, db: Session = Depends(get_db)):
-    """Restaura o progresso a partir de um JSON de exportação."""
     from models import LessonProgress, WeekNote, Milestone
 
-    # 1. Restaurar progresso de lições
     if "progress" in data:
         db.query(LessonProgress).delete()
         for p in data["progress"]:
@@ -131,7 +121,6 @@ def import_data(data: dict, db: Session = Depends(get_db)):
                 note=p.get("note", "")
             ))
 
-    # 2. Restaurar notas semanais
     if "week_notes" in data:
         db.query(WeekNote).delete()
         for n in data["week_notes"]:
@@ -140,11 +129,8 @@ def import_data(data: dict, db: Session = Depends(get_db)):
                 note=n.get("note", "")
             ))
 
-    # 3. Restaurar milestones
     if "milestones" in data:
-        # Zerar todos
         db.query(Milestone).update({Milestone.done: False})
-        # Marcar os concluídos pelo label correspondente
         done_labels = {m["label"] for m in data["milestones"] if m.get("done")}
         if done_labels:
             db.query(Milestone).filter(Milestone.label.in_(done_labels)).update(

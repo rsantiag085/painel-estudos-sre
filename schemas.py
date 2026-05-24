@@ -66,6 +66,7 @@ class StatsResponse(BaseModel):
     done: int
     total: int
     skipped: int
+    work_days: int
     hours_studied: float
     pct: int
     by_phase: list[PhaseStats]
