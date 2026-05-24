@@ -34,8 +34,8 @@ def upsert_progress(
     db: Session = Depends(get_db),
 ):
     """Salva ou atualiza o progresso de uma lição."""
-    if payload.status not in ("pending", "done", "skipped"):
-        raise HTTPException(status_code=422, detail="status deve ser: pending | done | skipped")
+    if payload.status not in ("pending", "done", "skipped", "work"):
+        raise HTTPException(status_code=422, detail="status deve ser: pending | done | skipped | work")
 
     row = db.query(LessonProgress).filter(LessonProgress.lesson_id == lesson_id).first()
     if row:

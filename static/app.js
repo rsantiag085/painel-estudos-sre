@@ -1,21 +1,51 @@
-/* app.js — SRE Tracker Frontend Logic */
+/* app.js — SRE Tracker Frontend — Escala 12x36, modelo por datas */
 'use strict';
 
 // ── Estado global ────────────────────────────────────────────────────────────
 const State = {
-  progress: {},      // { lesson_id: { status, note } }
+  progress: {},       // { lesson_id: { status, note } }
   stats: null,
   milestones: [],
-  weekNotes: {},     // { week_num: note }
+  weekNotes: {},      // { week_num: note }
   currentView: 'dashboard',
   phaseFilter: 'all',
-  currentLesson: null,  // { weekNum, day, idx, lessonData }
+  currentLesson: null,  // { weekNum, date, idx, lid, lesson }
 };
 
-// ── Dados do currículo (injetados pelo template via window.CURRICULUM) ────────
-const { PHASES, WEEKS, MILESTONES_SEED } = window.CURRICULUM;
-const DAYS_ORDER = ['seg', 'ter', 'qua', 'qui', 'sex'];
-const DAY_LABELS = { seg: 'SEG', ter: 'TER', qua: 'QUA', qui: 'QUI', sex: 'SEX' };
+// ── Dados do currículo injetados pelo template ────────────────────────────────
+const { PHASES, WEEKS } = window.CURRICULUM;
+
+// ── Helpers de data ───────────────────────────────────────────────────────────
+const DAY_NAMES_PT = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+
+function formatDate(dateStr) {
+  // "2026-05-01" → "01/05"
+  const [, m, d] = dateStr.split('-');
+  return `${d}/${m}`;
+}
+
+function getDayName(dateStr) {
+  // Usa T12:00 para evitar problema de fuso horário
+  const date = new Date(dateStr + 'T12:00:00');
+  return DAY_NAMES_PT[date.getDay()];
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getDayType(dateStr) {
+  const day = parseInt(dateStr.slice(8, 10), 10);
+  return day % 2 !== 0 ? 'F' : 'T';
+}
+
+function getDayTypeLabel(type) {
+  return type === 'F' ? 'FOLGA' : 'TRABALHO';
+}
+
+function blockLabel(block) {
+  return { manha: 'Manhã 09–11h', tarde: 'Tarde 14–16h', passivo: 'Passivo' }[block] || block;
+}
 
 // ── API helpers ──────────────────────────────────────────────────────────────
 async function apiGet(path) {
@@ -67,27 +97,47 @@ async function loadWeekNote(weekNum) {
   State.weekNotes[weekNum] = data.note || '';
 }
 
+// ── Semana atual (primeira com lição pending) ─────────────────────────────────
+function getCurrentWeekNum() {
+  for (const [wNum, wData] of Object.entries(WEEKS)) {
+    for (const [date, dateData] of Object.entries(wData.dates)) {
+      for (let i = 0; i < dateData.lessons.length; i++) {
+        const lid = `${date}-${i}`;
+        const status = State.progress[lid]?.status || 'pending';
+        if (status === 'pending') return parseInt(wNum);
+      }
+    }
+  }
+  return 36;
+}
+
+function getTodayInfo() {
+  const today = todayISO();
+  for (const [wNum, wData] of Object.entries(WEEKS)) {
+    if (wData.dates[today]) {
+      return { weekNum: parseInt(wNum), date: today, dateData: wData.dates[today], weekData: wData };
+    }
+  }
+  return null;
+}
+
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 function renderSidebar() {
   const s = State.stats;
   if (!s) return;
 
   const curWeek = getCurrentWeekNum();
+  document.getElementById('sidebar-week-value').textContent = `S${String(curWeek).padStart(2,'0')}`;
 
-  // Card de semana
-  document.getElementById('sidebar-week-value').textContent = `S${curWeek}`;
-
-  // Descobrir fase da semana atual
   let phaseLabel = '';
   for (const [ph, phData] of Object.entries(PHASES)) {
     if (phData.weeks.includes(curWeek)) {
-      phaseLabel = `Fase ${ph} · ${phData.weeks.length}sem`;
+      phaseLabel = `Fase ${ph}`;
       break;
     }
   }
   document.getElementById('sidebar-week-phase').textContent = phaseLabel || 'Cronograma completo';
 
-  // Card de progresso
   document.getElementById('sidebar-pct-value').innerHTML =
     `${s.pct}<span class="sidebar-prog-pct-sym">%</span>`;
   document.getElementById('sidebar-mini-fill').style.width = `${s.pct}%`;
@@ -95,52 +145,31 @@ function renderSidebar() {
   document.getElementById('sidebar-hours').textContent = `${s.hours_studied}h estudadas`;
 }
 
-function getCurrentWeekNum() {
-  // Primeira semana com pelo menos 1 lição pending
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
-    for (const day of DAYS_ORDER) {
-      const lessons = wData.days[day] || [];
-      for (let i = 0; i < lessons.length; i++) {
-        const lid = `w${wNum}-${day}-${i}`;
-        const status = State.progress[lid]?.status || 'pending';
-        if (status === 'pending') return parseInt(wNum);
-      }
-    }
-  }
-  return 31; // Tudo concluído
-}
-
 // ── Navigation ───────────────────────────────────────────────────────────────
 function setupNavListeners() {
   document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      navigateTo(item.dataset.view);
-    });
+    item.addEventListener('click', () => navigateTo(item.dataset.view));
   });
 }
 
 function navigateTo(view) {
   State.currentView = view;
-
-  // Update nav active
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.view === view);
   });
 
-  // Update header
   const headers = {
-    dashboard:   { title: '⬡ Dashboard',      meta: 'Visão geral do seu progresso' },
-    cronograma:  { title: '📅 Cronograma',     meta: '31 semanas · 5 fases · Mai–Dez 2026' },
-    milestones:  { title: '✓ Milestones',      meta: 'Checkpoints por fase' },
-    estatisticas:{ title: '📊 Estatísticas',   meta: 'Horas, distribuição, progresso por fase' },
-    exportar:    { title: '📤 Exportar',        meta: 'Backup do seu progresso' },
+    dashboard:    { title: '⬡ Dashboard',      meta: 'Visão geral · escala 12x36 · Mai–Dez 2026' },
+    cronograma:   { title: '📅 Cronograma',     meta: '36 semanas · 5 fases · datas reais da escala' },
+    milestones:   { title: '✓ Milestones',      meta: 'Checkpoints por fase' },
+    estatisticas: { title: '📊 Estatísticas',   meta: 'Horas, distribuição, progresso por fase' },
+    exportar:     { title: '📤 Exportar',        meta: 'Backup do seu progresso' },
   };
 
   const h = headers[view] || headers.dashboard;
   document.getElementById('view-title').textContent = h.title;
   document.getElementById('view-meta').textContent = h.meta;
 
-  // Render view
   const views = {
     dashboard:    renderDashboard,
     cronograma:   renderCronograma,
@@ -151,13 +180,118 @@ function navigateTo(view) {
   (views[view] || renderDashboard)();
 }
 
+// ── Lesson card HTML ─────────────────────────────────────────────────────────
+function tagHtml(tag) {
+  if (!tag) return '';
+  const map = {
+    lab:  ['LAB',    'tag-lab'],
+    free: ['FREE',   'tag-free'],
+    book: ['LIVRO',  'tag-book'],
+    aws:  ['AWS',    'tag-aws'],
+  };
+  const [label, cls] = map[tag] || [tag.toUpperCase(), ''];
+  return `<span class="lesson-tag ${cls}">${label}</span>`;
+}
+
+function blockBadgeHtml(block) {
+  const map = {
+    manha:  ['MANHÃ',   'block-manha'],
+    tarde:  ['TARDE',   'block-tarde'],
+    passivo:['PASSIVO', 'block-passivo'],
+  };
+  const [label, cls] = map[block] || [block.toUpperCase(), ''];
+  return `<span class="block-badge ${cls}">${label}</span>`;
+}
+
+function lessonCardHtml(lesson, lid, weekNum, date, idx) {
+  const progress = State.progress[lid];
+  const status = progress?.status || 'pending';
+  const note = progress?.note || '';
+  const cls = status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : '';
+  const icon = status === 'done' ? '✓ ' : status === 'skipped' ? '✗ ' : '';
+
+  return `
+    <div class="lesson-card ${cls}" onclick="openLessonModal(${weekNum},'${date}',${idx})">
+      <div class="lesson-name">${icon}${lesson.name}</div>
+      <div class="lesson-meta">
+        <span class="lesson-hours">${lesson.h}h</span>
+        ${blockBadgeHtml(lesson.block || 'manha')}
+        ${tagHtml(lesson.tag)}
+      </div>
+      ${note ? `<div class="lesson-note-preview">// ${note}</div>` : ''}
+    </div>
+  `;
+}
+
 // ── VIEW: Dashboard ──────────────────────────────────────────────────────────
 function renderDashboard() {
   const s = State.stats;
   const curWeek = getCurrentWeekNum();
+  const todayInfo = getTodayInfo();
+  const today = todayISO();
+
+  // Cabeçalho de hoje
+  let todayHtml = '';
+  if (todayInfo) {
+    const { date, dateData, weekData } = todayInfo;
+    const typeLabel = getDayTypeLabel(dateData.type);
+    const typeCls = dateData.type === 'F' ? 'folga' : 'trabalho';
+    const hoursAvail = dateData.type === 'F' ? '4h' : '0.5h';
+    const dayName = getDayName(date);
+
+    // Contar lições do dia
+    const todayDone = dateData.lessons.filter((_, i) =>
+      State.progress[`${date}-${i}`]?.status === 'done'
+    ).length;
+    const todayTotal = dateData.lessons.length;
+
+    todayHtml = `
+      <div class="today-card ${typeCls}">
+        <div class="today-header">
+          <div class="today-date-block">
+            <span class="today-weekday">${dayName}</span>
+            <span class="today-date">${formatDate(date)}</span>
+          </div>
+          <div class="today-type-block">
+            <span class="today-type-badge ${typeCls}">${typeLabel}</span>
+            <span class="today-hours">${hoursAvail} disponíveis</span>
+          </div>
+          <div class="today-progress-block">
+            <span class="today-done">${todayDone}/${todayTotal}</span>
+            <span class="today-done-label">de hoje</span>
+          </div>
+        </div>
+        <div class="today-lessons">
+    `;
+
+    // Agrupar por bloco
+    const byBlock = { manha: [], tarde: [], passivo: [] };
+    dateData.lessons.forEach((lesson, i) => {
+      const block = lesson.block || (dateData.type === 'T' ? 'passivo' : 'manha');
+      (byBlock[block] = byBlock[block] || []).push({ lesson, i });
+    });
+
+    ['manha', 'tarde', 'passivo'].forEach(block => {
+      const items = byBlock[block] || [];
+      if (!items.length) return;
+      todayHtml += `<div class="today-block">
+        <div class="today-block-label">${blockLabel(block)}</div>`;
+      items.forEach(({ lesson, i }) => {
+        todayHtml += lessonCardHtml(lesson, `${date}-${i}`, todayInfo.weekNum, date, i);
+      });
+      todayHtml += `</div>`;
+    });
+
+    todayHtml += `</div></div>`;
+  } else {
+    todayHtml = `<div class="today-card"><div class="empty-state">Hoje (${formatDate(today)}) está fora do período Mai–Dez 2026</div></div>`;
+  }
 
   let html = `
-    <div class="stats-grid">
+    <div class="section-title">Hoje — ${todayISO() >= '2026-05-01' && todayISO() <= '2026-12-31' ? formatDate(today) + ' · ' + getDayName(today) : formatDate(today)}</div>
+    ${todayHtml}
+
+    <div class="stats-grid" style="margin-top:16px">
       <div class="stat-card green">
         <div class="val">${s.done}</div>
         <div class="lbl">Concluídas</div>
@@ -209,42 +343,38 @@ function renderDashboard() {
       </div>
     `;
   }
-
   html += `</div>`;
 
-  // Semana atual
+  // Semana atual (próximas folgas)
   const curWeekData = WEEKS[curWeek];
   if (curWeekData) {
     html += `
-      <div class="section-title" style="margin-top:8px">Semana Atual</div>
+      <div class="section-title" style="margin-top:8px">Semana Atual — ${curWeekData.label}</div>
       <div class="current-week-card">
         <div class="current-week-header">
           <div class="current-week-label">${curWeekData.label} — <span class="current-week-focus">${curWeekData.focus}</span></div>
           <span class="current-week-badge">Em Andamento</span>
         </div>
-        <div class="days-grid">
+        <div class="dates-grid">
     `;
 
-    for (const day of DAYS_ORDER) {
-      const lessons = curWeekData.days[day] || [];
-      html += `<div class="day-col">
-        <div class="day-name">${DAY_LABELS[day]}</div>
-        <div class="day-lessons">`;
+    for (const [date, dateData] of Object.entries(curWeekData.dates)) {
+      const isToday = date === today;
+      const typeCls = dateData.type === 'F' ? 'folga' : 'trabalho';
+      const dayName = getDayName(date);
 
-      lessons.forEach((lesson, i) => {
-        const lid = `w${curWeek}-${day}-${i}`;
-        const s = State.progress[lid]?.status || 'pending';
-        const cls = s === 'done' ? 'done' : s === 'skipped' ? 'skipped' : '';
-        const icon = s === 'done' ? '✓ ' : s === 'skipped' ? '✗ ' : '';
-        html += `
-          <div class="lesson-card ${cls}" onclick="openLessonModal(${curWeek},'${day}',${i})">
-            <div class="lesson-name">${icon}${lesson.name}</div>
-            <div class="lesson-meta">
-              <span class="lesson-hours">${lesson.h}h</span>
-              ${tagHtml(lesson.tag)}
-            </div>
+      html += `
+        <div class="date-col ${typeCls} ${isToday ? 'today-col' : ''}">
+          <div class="date-col-header">
+            <span class="date-col-day">${dayName}</span>
+            <span class="date-col-num">${formatDate(date)}</span>
+            <span class="date-type-chip ${typeCls}">${getDayTypeLabel(dateData.type)}</span>
           </div>
-        `;
+          <div class="date-col-lessons">
+      `;
+
+      dateData.lessons.forEach((lesson, i) => {
+        html += lessonCardHtml(lesson, `${date}-${i}`, curWeek, date, i);
       });
 
       html += `</div></div>`;
@@ -261,10 +391,10 @@ function renderDashboard() {
 
     for (const item of skippedList.slice(0, 10)) {
       html += `
-        <div class="skipped-item" onclick="openLessonModal(${item.weekNum},'${item.day}',${item.idx})">
+        <div class="skipped-item" onclick="openLessonModal(${item.weekNum},'${item.date}',${item.idx})">
           <span class="skip-icon">✗</span>
           <span class="skip-name">${item.lesson.name}</span>
-          <span class="skip-meta">${WEEKS[item.weekNum].label} · ${DAY_LABELS[item.day]}</span>
+          <span class="skip-meta">${WEEKS[item.weekNum].label} · ${formatDate(item.date)}</span>
         </div>
       `;
     }
@@ -272,7 +402,6 @@ function renderDashboard() {
     if (skippedList.length > 10) {
       html += `<div class="empty-state" style="padding:10px">...e mais ${skippedList.length - 10} lições</div>`;
     }
-
     html += `</div>`;
   }
 
@@ -282,12 +411,11 @@ function renderDashboard() {
 function getSkippedLessons() {
   const result = [];
   for (const [wNum, wData] of Object.entries(WEEKS)) {
-    for (const day of DAYS_ORDER) {
-      const lessons = wData.days[day] || [];
-      lessons.forEach((lesson, i) => {
-        const lid = `w${wNum}-${day}-${i}`;
+    for (const [date, dateData] of Object.entries(wData.dates)) {
+      dateData.lessons.forEach((lesson, i) => {
+        const lid = `${date}-${i}`;
         if (State.progress[lid]?.status === 'skipped') {
-          result.push({ weekNum: parseInt(wNum), day, idx: i, lesson });
+          result.push({ weekNum: parseInt(wNum), date, idx: i, lesson });
         }
       });
     }
@@ -297,6 +425,8 @@ function getSkippedLessons() {
 
 // ── VIEW: Cronograma ─────────────────────────────────────────────────────────
 function renderCronograma() {
+  const today = todayISO();
+
   let html = `
     <div class="filter-bar">
       <span class="filter-label">Fase:</span>
@@ -315,16 +445,14 @@ function renderCronograma() {
   for (const [ph, phData] of Object.entries(PHASES)) {
     if (State.phaseFilter !== 'all' && State.phaseFilter !== ph) continue;
 
-    // Phase stats
     let phDone = 0, phTotal = 0;
     for (const wNum of phData.weeks) {
       const wData = WEEKS[wNum];
       if (!wData) continue;
-      for (const day of DAYS_ORDER) {
-        const lessons = wData.days[day] || [];
-        lessons.forEach((_, i) => {
+      for (const [date, dateData] of Object.entries(wData.dates)) {
+        dateData.lessons.forEach((_, i) => {
           phTotal++;
-          if (State.progress[`w${wNum}-${day}-${i}`]?.status === 'done') phDone++;
+          if (State.progress[`${date}-${i}`]?.status === 'done') phDone++;
         });
       }
     }
@@ -354,11 +482,10 @@ function renderCronograma() {
       if (!wData) continue;
 
       let wDone = 0, wTotal = 0;
-      for (const day of DAYS_ORDER) {
-        const lessons = wData.days[day] || [];
-        lessons.forEach((_, i) => {
+      for (const [date, dateData] of Object.entries(wData.dates)) {
+        dateData.lessons.forEach((_, i) => {
           wTotal++;
-          if (State.progress[`w${wNum}-${day}-${i}`]?.status === 'done') wDone++;
+          if (State.progress[`${date}-${i}`]?.status === 'done') wDone++;
         });
       }
 
@@ -371,33 +498,26 @@ function renderCronograma() {
             <span class="week-chevron">▾</span>
           </div>
           <div class="week-body">
-            <div class="days-grid">
+            <div class="dates-grid">
       `;
 
-      for (const day of DAYS_ORDER) {
-        const lessons = wData.days[day] || [];
-        html += `<div class="day-col">
-          <div class="day-name">${DAY_LABELS[day]}</div>
-          <div class="day-lessons">`;
+      for (const [date, dateData] of Object.entries(wData.dates)) {
+        const isToday = date === today;
+        const typeCls = dateData.type === 'F' ? 'folga' : 'trabalho';
+        const dayName = getDayName(date);
 
-        lessons.forEach((lesson, i) => {
-          const lid = `w${wNum}-${day}-${i}`;
-          const progress = State.progress[lid];
-          const status = progress?.status || 'pending';
-          const note = progress?.note || '';
-          const cls = status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : '';
-          const icon = status === 'done' ? '✓ ' : status === 'skipped' ? '✗ ' : '';
-
-          html += `
-            <div class="lesson-card ${cls}" onclick="openLessonModal(${wNum},'${day}',${i})">
-              <div class="lesson-name">${icon}${lesson.name}</div>
-              <div class="lesson-meta">
-                <span class="lesson-hours">${lesson.h}h</span>
-                ${tagHtml(lesson.tag)}
-              </div>
-              ${note ? `<div class="lesson-note-preview">// ${note}</div>` : ''}
+        html += `
+          <div class="date-col ${typeCls} ${isToday ? 'today-col' : ''}">
+            <div class="date-col-header">
+              <span class="date-col-day">${dayName}</span>
+              <span class="date-col-num">${formatDate(date)}</span>
+              <span class="date-type-chip ${typeCls}">${getDayTypeLabel(dateData.type)}</span>
             </div>
-          `;
+            <div class="date-col-lessons">
+        `;
+
+        dateData.lessons.forEach((lesson, i) => {
+          html += lessonCardHtml(lesson, `${date}-${i}`, wNum, date, i);
         });
 
         html += `</div></div>`;
@@ -407,7 +527,7 @@ function renderCronograma() {
             </div>
             <div class="week-note-row">
               <label>Nota da semana</label>
-              <textarea class="week-note-input" 
+              <textarea class="week-note-input"
                 placeholder="Adicione uma nota sobre esta semana..."
                 data-week="${wNum}"
                 onblur="saveWeekNote(this)">${State.weekNotes[wNum] || ''}</textarea>
@@ -421,8 +541,6 @@ function renderCronograma() {
   }
 
   document.getElementById('view-content').innerHTML = html;
-
-  // Carregar notas das semanas visíveis
   loadVisibleWeekNotes();
 }
 
@@ -430,9 +548,7 @@ async function loadVisibleWeekNotes() {
   const textareas = document.querySelectorAll('.week-note-input');
   for (const ta of textareas) {
     const wNum = parseInt(ta.dataset.week);
-    if (State.weekNotes[wNum] === undefined) {
-      await loadWeekNote(wNum);
-    }
+    if (State.weekNotes[wNum] === undefined) await loadWeekNote(wNum);
     ta.value = State.weekNotes[wNum] || '';
   }
 }
@@ -467,7 +583,6 @@ async function saveWeekNote(textarea) {
 
 // ── VIEW: Milestones ─────────────────────────────────────────────────────────
 function renderMilestones() {
-  // Agrupar por fase
   const byPhase = {};
   for (const m of State.milestones) {
     if (!byPhase[m.phase_num]) byPhase[m.phase_num] = [];
@@ -475,7 +590,6 @@ function renderMilestones() {
   }
 
   let html = '';
-
   for (const [ph, phData] of Object.entries(PHASES)) {
     const items = byPhase[ph] || [];
     const allDone = items.length > 0 && items.every(m => m.done);
@@ -492,7 +606,7 @@ function renderMilestones() {
 
     for (const m of items) {
       html += `
-        <div class="milestone-item ${m.done ? 'done' : ''}" 
+        <div class="milestone-item ${m.done ? 'done' : ''}"
              id="mi-${m.id}"
              onclick="toggleMilestone(${m.id})">
           <div class="milestone-check">${m.done ? '✓' : ''}</div>
@@ -511,13 +625,12 @@ async function toggleMilestone(id) {
   const m = State.milestones.find(x => x.id === id);
   if (!m) return;
   m.done = !m.done;
-
   try {
     await apiPost(`/api/milestones/${id}`, { done: m.done });
     renderMilestones();
     showToast(m.done ? '✓ Milestone concluído!' : '○ Milestone desmarcado');
   } catch (e) {
-    m.done = !m.done; // Reverte
+    m.done = !m.done;
     showToast('Erro ao salvar', true);
   }
 }
@@ -527,13 +640,11 @@ function renderEstatisticas() {
   const s = State.stats;
   if (!s) return;
 
-  // Calcular horas por tag
   const tagHours = { lab: 0, free: 0, book: 0, aws: 0, aula: 0 };
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
-    for (const day of DAYS_ORDER) {
-      const lessons = wData.days[day] || [];
-      lessons.forEach((lesson, i) => {
-        const lid = `w${wNum}-${day}-${i}`;
+  for (const [, wData] of Object.entries(WEEKS)) {
+    for (const [date, dateData] of Object.entries(wData.dates)) {
+      dateData.lessons.forEach((lesson, i) => {
+        const lid = `${date}-${i}`;
         if (State.progress[lid]?.status === 'done') {
           const tag = lesson.tag || 'aula';
           tagHours[tag] = (tagHours[tag] || 0) + lesson.h;
@@ -542,22 +653,33 @@ function renderEstatisticas() {
     }
   }
 
-  // Streak de dias consecutivos (simplificado: contar semanas com progresso)
+  // Folgas com pelo menos 1 lição concluída
+  let folgasComEstudo = 0;
+  let trabalhoComPassivo = 0;
+  for (const [, wData] of Object.entries(WEEKS)) {
+    for (const [date, dateData] of Object.entries(wData.dates)) {
+      const hasDone = dateData.lessons.some((_, i) =>
+        State.progress[`${date}-${i}`]?.status === 'done'
+      );
+      if (hasDone) {
+        if (dateData.type === 'F') folgasComEstudo++;
+        else trabalhoComPassivo++;
+      }
+    }
+  }
+
   let streak = 0;
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
+  for (const [, wData] of Object.entries(WEEKS)) {
     let hasProgress = false;
-    for (const day of DAYS_ORDER) {
-      const lessons = wData.days[day] || [];
-      if (lessons.some((_, i) => State.progress[`w${wNum}-${day}-${i}`]?.status === 'done')) {
-        hasProgress = true;
-        break;
+    for (const [date, dateData] of Object.entries(wData.dates)) {
+      if (dateData.lessons.some((_, i) => State.progress[`${date}-${i}`]?.status === 'done')) {
+        hasProgress = true; break;
       }
     }
     if (hasProgress) streak++; else break;
   }
 
   let html = `
-    <!-- Barras por fase -->
     <div class="chart-container">
       <div class="chart-title">Progresso por Fase</div>
   `;
@@ -578,8 +700,7 @@ function renderEstatisticas() {
 
   html += `</div>
 
-    <!-- Stats rápidas -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px">
       <div class="chart-container" style="margin:0">
         <div class="chart-title">Streak</div>
         <div style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--yellow)">${streak}</div>
@@ -591,79 +712,51 @@ function renderEstatisticas() {
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${s.done} de ${s.total} lições</div>
       </div>
       <div class="chart-container" style="margin:0">
-        <div class="chart-title">Horas Totais</div>
+        <div class="chart-title">Horas Estudadas</div>
         <div style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--blue)">${s.hours_studied}h</div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">de ~122.5h planejadas</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">de ~168h planejadas</div>
+      </div>
+      <div class="chart-container" style="margin:0">
+        <div class="chart-title">Dias de Folga</div>
+        <div style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--green)">${folgasComEstudo}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">com estudo realizado</div>
       </div>
     </div>
 
-    <!-- Horas por tipo -->
     <div class="chart-container">
       <div class="chart-title">Horas por Tipo de Conteúdo</div>
       <table class="stats-table">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Tag</th>
-            <th>Horas Concluídas</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Tipo</th><th>Tag</th><th>Horas Concluídas</th></tr></thead>
         <tbody>
-          <tr>
-            <td>Aulas do Curso</td>
-            <td><span class="lesson-tag" style="background:rgba(255,255,255,0.05);color:var(--muted);border:1px solid var(--border)">AULA</span></td>
-            <td style="color:var(--text)">${tagHours.aula}h</td>
-          </tr>
-          <tr>
-            <td>Labs Zabbix</td>
-            <td><span class="lesson-tag tag-lab">LAB</span></td>
-            <td style="color:var(--orange)">${tagHours.lab}h</td>
-          </tr>
-          <tr>
-            <td>Conteúdo Gratuito</td>
-            <td><span class="lesson-tag tag-free">FREE</span></td>
-            <td style="color:var(--blue)">${tagHours.free}h</td>
-          </tr>
-          <tr>
-            <td>Livros / Leitura</td>
-            <td><span class="lesson-tag tag-book">LIVRO</span></td>
-            <td style="color:var(--yellow)">${tagHours.book}h</td>
-          </tr>
-          <tr>
-            <td>AWS (Certificação)</td>
-            <td><span class="lesson-tag tag-aws">AWS</span></td>
-            <td style="color:var(--aws)">${tagHours.aws}h</td>
-          </tr>
+          <tr><td>Aulas do Curso</td><td><span class="lesson-tag" style="background:rgba(255,255,255,0.05);color:var(--muted);border:1px solid var(--border)">AULA</span></td><td style="color:var(--text)">${tagHours.aula.toFixed(1)}h</td></tr>
+          <tr><td>Labs Práticos</td><td><span class="lesson-tag tag-lab">LAB</span></td><td style="color:var(--orange)">${tagHours.lab.toFixed(1)}h</td></tr>
+          <tr><td>Conteúdo Gratuito</td><td><span class="lesson-tag tag-free">FREE</span></td><td style="color:var(--blue)">${tagHours.free.toFixed(1)}h</td></tr>
+          <tr><td>Livros / Leitura</td><td><span class="lesson-tag tag-book">LIVRO</span></td><td style="color:var(--yellow)">${tagHours.book.toFixed(1)}h</td></tr>
+          <tr><td>AWS (Certificação)</td><td><span class="lesson-tag tag-aws">AWS</span></td><td style="color:var(--aws)">${tagHours.aws.toFixed(1)}h</td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Distribuição por fase -->
     <div class="chart-container">
       <div class="chart-title">Distribuição por Fase</div>
       <table class="stats-table">
-        <thead>
-          <tr><th>Fase</th><th>Concluídas</th><th>Puladas</th><th>Pendentes</th><th>Total</th></tr>
-        </thead>
+        <thead><tr><th>Fase</th><th>Concluídas</th><th>Puladas</th><th>Pendentes</th><th>Total</th></tr></thead>
         <tbody>
   `;
 
   for (const ph of s.by_phase) {
-    // Calcular skipped e pending para a fase
     let phSkipped = 0;
     const phData = PHASES[ph.phase];
     for (const wNum of phData.weeks) {
       const wData = WEEKS[wNum];
       if (!wData) continue;
-      for (const day of DAYS_ORDER) {
-        const lessons = wData.days[day] || [];
-        lessons.forEach((_, i) => {
-          if (State.progress[`w${wNum}-${day}-${i}`]?.status === 'skipped') phSkipped++;
+      for (const [date, dateData] of Object.entries(wData.dates)) {
+        dateData.lessons.forEach((_, i) => {
+          if (State.progress[`${date}-${i}`]?.status === 'skipped') phSkipped++;
         });
       }
     }
     const phPending = ph.total - ph.done - phSkipped;
-
     html += `
       <tr>
         <td>F${ph.phase}</td>
@@ -676,7 +769,6 @@ function renderEstatisticas() {
   }
 
   html += `</tbody></table></div>`;
-
   document.getElementById('view-content').innerHTML = html;
 }
 
@@ -686,14 +778,9 @@ function renderExportar() {
   const html = `
     <div class="export-section">
       <div class="export-title">📦 Exportar JSON (Backup)</div>
-      <div class="export-desc">
-        Exporta todo o progresso salvo no banco SQLite em formato JSON.<br>
-        Use para backup ou migração para outro dispositivo.
-      </div>
+      <div class="export-desc">Exporta todo o progresso em JSON para backup ou migração.</div>
       <div class="export-actions">
-        <button class="btn btn-primary" id="btn-export-json" onclick="exportJSON()">
-          ↓ BAIXAR JSON
-        </button>
+        <button class="btn btn-primary" id="btn-export-json" onclick="exportJSON()">↓ BAIXAR JSON</button>
       </div>
       <div class="export-timestamp" id="json-ts"></div>
     </div>
@@ -701,27 +788,20 @@ function renderExportar() {
     <div class="export-section">
       <div class="export-title">📥 Restaurar JSON (Restore)</div>
       <div class="export-desc">
-        Restaura o progresso completo, notas semanais e checkpoints a partir de um arquivo de backup JSON.<br>
-        <span style="color:var(--red); font-weight:700">ATENÇÃO: Isso irá substituir todos os dados atuais permanentemente!</span>
+        Restaura o progresso a partir de um arquivo de backup JSON.<br>
+        <span style="color:var(--red);font-weight:700">ATENÇÃO: Substitui todos os dados atuais!</span>
       </div>
       <div class="export-actions">
         <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)">
-        <button class="btn" style="border-color:var(--red); color:var(--red)" id="btn-import-json" onclick="document.getElementById('import-file').click()">
-          ↑ RESTAURAR BACKUP
-        </button>
+        <button class="btn" style="border-color:var(--red);color:var(--red)" onclick="document.getElementById('import-file').click()">↑ RESTAURAR BACKUP</button>
       </div>
     </div>
 
     <div class="export-section">
       <div class="export-title">📄 Exportar Relatório TXT</div>
-      <div class="export-desc">
-        Gera um relatório textual legível com seu progresso atual.<br>
-        Ideal para registros pessoais ou compartilhamento.
-      </div>
+      <div class="export-desc">Gera um relatório legível com seu progresso atual.</div>
       <div class="export-actions">
-        <button class="btn" id="btn-export-txt" onclick="exportTXT()">
-          ↓ BAIXAR TXT
-        </button>
+        <button class="btn" id="btn-export-txt" onclick="exportTXT()">↓ BAIXAR TXT</button>
       </div>
       <div class="export-timestamp" id="txt-ts"></div>
     </div>
@@ -729,10 +809,9 @@ function renderExportar() {
     <div class="export-section">
       <div class="export-title">📊 Resumo Atual</div>
       <div class="export-desc">
-        Progresso: <strong style="color:var(--green)">${s.done}/${s.total} lições</strong> 
-        (${s.pct}%) &nbsp;·&nbsp; 
-        Horas: <strong style="color:var(--blue)">${s.hours_studied}h</strong> &nbsp;·&nbsp;
-        Puladas: <strong style="color:var(--red)">${s.skipped}</strong>
+        Progresso: <strong style="color:var(--green)">${s.done}/${s.total} lições</strong> (${s.pct}%)
+        &nbsp;·&nbsp; Horas: <strong style="color:var(--blue)">${s.hours_studied}h</strong>
+        &nbsp;·&nbsp; Puladas: <strong style="color:var(--red)">${s.skipped}</strong>
       </div>
     </div>
   `;
@@ -751,8 +830,7 @@ async function exportJSON() {
     a.download = `sre-tracker-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    const ts = new Date().toLocaleString('pt-BR');
-    document.getElementById('json-ts').textContent = `Último export: ${ts}`;
+    document.getElementById('json-ts').textContent = `Último export: ${new Date().toLocaleString('pt-BR')}`;
     btn.textContent = '↓ BAIXAR JSON';
     showToast('↓ JSON exportado!');
   } catch (e) {
@@ -763,52 +841,36 @@ async function exportJSON() {
 async function importJSON(input) {
   const file = input.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
       const data = JSON.parse(e.target.result);
-      
-      // Validação básica do formato de backup
       if (!data.progress && !data.week_notes && !data.milestones) {
-        showToast('Formato de JSON de backup inválido', true);
-        return;
-      }
-
-      if (!confirm('Tem certeza que deseja restaurar este backup? Todos os seus dados atuais no banco serão substituídos!')) {
+        showToast('Formato de backup inválido', true);
         input.value = '';
         return;
       }
-
+      if (!confirm('Tem certeza? Todos os dados atuais serão substituídos!')) {
+        input.value = '';
+        return;
+      }
       const btn = document.getElementById('btn-import-json');
-      btn.textContent = 'RESTAURANDO...';
-      btn.disabled = true;
-
+      if (btn) { btn.textContent = 'RESTAURANDO...'; btn.disabled = true; }
       await apiPost('/api/import', data);
-      
-      showToast('✓ Backup restaurado com sucesso!');
-      
-      // Recarregar os dados do estado
+      showToast('✓ Backup restaurado!');
       await loadProgress();
       await loadStats();
       await loadMilestones();
-      
-      // Resetar notas locais carregadas
       State.weekNotes = {};
-      
-      // Re-renderizar sidebar e navegar pro dashboard para atualizar a tela
       renderSidebar();
       navigateTo('dashboard');
     } catch (err) {
       console.error(err);
-      showToast('Erro ao ler ou restaurar o arquivo de backup', true);
+      showToast('Erro ao restaurar backup', true);
     } finally {
       input.value = '';
       const btn = document.getElementById('btn-import-json');
-      if (btn) {
-        btn.textContent = '↑ RESTAURAR BACKUP';
-        btn.disabled = false;
-      }
+      if (btn) { btn.textContent = '↑ RESTAURAR BACKUP'; btn.disabled = false; }
     }
   };
   reader.readAsText(file);
@@ -835,29 +897,26 @@ function exportTXT() {
 
   lines.push('', '─'.repeat(60), 'LIÇÕES CONCLUÍDAS:', '');
 
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
-    for (const day of DAYS_ORDER) {
-      const lessons = wData.days[day] || [];
-      lessons.forEach((lesson, i) => {
-        const lid = `w${wNum}-${day}-${i}`;
+  for (const [, wData] of Object.entries(WEEKS)) {
+    for (const [date, dateData] of Object.entries(wData.dates)) {
+      dateData.lessons.forEach((lesson, i) => {
+        const lid = `${date}-${i}`;
         const p = State.progress[lid];
         if (p?.status === 'done') {
           const note = p.note ? ` // ${p.note}` : '';
-          lines.push(`  ✓ [${wData.label}/${DAY_LABELS[day]}] ${lesson.name}${note}`);
+          lines.push(`  ✓ [${wData.label}/${formatDate(date)}] ${lesson.name}${note}`);
         }
       });
     }
   }
 
   lines.push('', '─'.repeat(60), 'LIÇÕES PULADAS:', '');
-
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
-    for (const day of DAYS_ORDER) {
-      const lessons = wData.days[day] || [];
-      lessons.forEach((lesson, i) => {
-        const lid = `w${wNum}-${day}-${i}`;
+  for (const [, wData] of Object.entries(WEEKS)) {
+    for (const [date, dateData] of Object.entries(wData.dates)) {
+      dateData.lessons.forEach((lesson, i) => {
+        const lid = `${date}-${i}`;
         if (State.progress[lid]?.status === 'skipped') {
-          lines.push(`  ✗ [${wData.label}/${DAY_LABELS[day]}] ${lesson.name}`);
+          lines.push(`  ✗ [${wData.label}/${formatDate(date)}] ${lesson.name}`);
         }
       });
     }
@@ -870,81 +929,76 @@ function exportTXT() {
   a.download = `sre-tracker-${new Date().toISOString().split('T')[0]}.txt`;
   a.click();
   URL.revokeObjectURL(url);
-
-  const ts = new Date().toLocaleString('pt-BR');
-  document.getElementById('txt-ts').textContent = `Último export: ${ts}`;
+  document.getElementById('txt-ts').textContent = `Último export: ${new Date().toLocaleString('pt-BR')}`;
   showToast('↓ TXT exportado!');
 }
 
 // ── Modal de Lição ───────────────────────────────────────────────────────────
-function openLessonModal(weekNum, day, idx) {
+function openLessonModal(weekNum, date, idx) {
   const wData = WEEKS[weekNum];
   if (!wData) return;
-  const lesson = wData.days[day]?.[idx];
+  const dateData = wData.dates[date];
+  if (!dateData) return;
+  const lesson = dateData.lessons[idx];
   if (!lesson) return;
 
-  const lid = `w${weekNum}-${day}-${idx}`;
+  const lid = `${date}-${idx}`;
   const progress = State.progress[lid] || { status: 'pending', note: '' };
 
-  State.currentLesson = { weekNum, day, idx, lid, lesson };
+  State.currentLesson = { weekNum, date, idx, lid, lesson };
 
   document.getElementById('m-title').textContent = lesson.name;
+
+  const typeLabel = getDayTypeLabel(dateData.type);
+  const typeCls = dateData.type === 'F' ? 'folga' : 'trabalho';
   document.getElementById('m-sub').innerHTML = `
     <span>${wData.label}</span>
     <span>·</span>
-    <span>${DAY_LABELS[day]}</span>
+    <span>${formatDate(date)} ${getDayName(date)}</span>
+    <span>·</span>
+    <span class="m-type-badge ${typeCls}">${typeLabel}</span>
+    <span>·</span>
+    <span>${blockLabel(lesson.block || 'manha')}</span>
     <span>·</span>
     <span>${lesson.h}h</span>
-    ${lesson.tag ? `<span>·</span><span class="lesson-tag ${tagClass(lesson.tag)}">${tagLabel(lesson.tag)}</span>` : ''}
+    ${tagHtml(lesson.tag)}
   `;
 
-  // Status options
-  document.getElementById('opt-done').className    = `status-opt ${progress.status === 'done'    ? 'sel-done' : ''}`;
-  document.getElementById('opt-skipped').className = `status-opt ${progress.status === 'skipped' ? 'sel-skipped' : ''}`;
-  document.getElementById('opt-pending').className = `status-opt ${progress.status === 'pending' ? 'sel-pending' : ''}`;
+  // Marcar status atual
+  document.querySelectorAll('.status-opt').forEach(el => el.classList.remove('sel-done','sel-skipped','sel-pending'));
+  const selMap = { done: 'sel-done', skipped: 'sel-skipped', pending: 'sel-pending' };
+  const selEl = document.getElementById(`opt-${progress.status}`);
+  if (selEl) selEl.classList.add(selMap[progress.status] || 'sel-pending');
 
   document.getElementById('m-note').value = progress.note || '';
+
+  State.selectedStatus = progress.status;
   document.getElementById('m-modal').classList.add('open');
 }
 
-function closeModal() {
-  document.getElementById('m-modal').classList.remove('open');
-  State.currentLesson = null;
-}
-
 function selectStatus(status) {
-  ['done', 'skipped', 'pending'].forEach(s => {
-    document.getElementById(`opt-${s}`).className = `status-opt ${status === s ? `sel-${s}` : ''}`;
-  });
-  if (State.currentLesson) {
-    State.currentLesson._pendingStatus = status;
-  }
+  State.selectedStatus = status;
+  document.querySelectorAll('.status-opt').forEach(el => el.classList.remove('sel-done','sel-skipped','sel-pending'));
+  const selMap = { done: 'sel-done', skipped: 'sel-skipped', pending: 'sel-pending' };
+  const el = document.getElementById(`opt-${status}`);
+  if (el) el.classList.add(selMap[status] || '');
 }
 
 async function saveLesson() {
-  if (!State.currentLesson) return;
-  const { lid, weekNum, day, idx } = State.currentLesson;
-
-  // Detectar status selecionado
-  let status = 'pending';
-  for (const s of ['done', 'skipped', 'pending']) {
-    if (document.getElementById(`opt-${s}`).classList.contains(`sel-${s}`)) {
-      status = s;
-      break;
-    }
-  }
-
+  const { weekNum, date, idx, lid } = State.currentLesson;
+  const status = State.selectedStatus || 'pending';
   const note = document.getElementById('m-note').value.trim();
 
   try {
-    await apiPost(`/api/progress/${encodeURIComponent(lid)}`, { status, note });
+    await apiPost(`/api/progress/${lid}`, { status, note });
     State.progress[lid] = { status, note };
+
     await loadStats();
     renderSidebar();
     closeModal();
-    showToast('✓ Salvo!');
+    showToast(status === 'done' ? '✓ Concluído!' : status === 'skipped' ? '✗ Marcado como pulado' : '○ Marcado como pendente');
 
-    // Re-render view atual
+    // Re-renderizar a view atual
     if (State.currentView === 'dashboard') renderDashboard();
     else if (State.currentView === 'cronograma') renderCronograma();
   } catch (e) {
@@ -952,34 +1006,19 @@ async function saveLesson() {
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function tagHtml(tag) {
-  if (!tag) return '';
-  const cls = tagClass(tag);
-  const lbl = tagLabel(tag);
-  return `<span class="lesson-tag ${cls}">${lbl}</span>`;
+function closeModal() {
+  document.getElementById('m-modal').classList.remove('open');
+  State.currentLesson = null;
 }
 
-function tagClass(tag) {
-  return { lab: 'tag-lab', free: 'tag-free', book: 'tag-book', aws: 'tag-aws' }[tag] || '';
-}
-
-function tagLabel(tag) {
-  return { lab: 'LAB', free: 'FREE', book: 'LIVRO', aws: 'AWS' }[tag] || tag?.toUpperCase() || '';
-}
-
-function showToast(msg, isErr = false) {
+// ── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = `show${isErr ? ' err' : ''}`;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.className = ''; }, 2500);
+  t.className = isError ? 'error' : '';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ── Keyboard ESC para fechar modal ───────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
-});
-
 // ── Start ────────────────────────────────────────────────────────────────────
-init().catch(console.error);
+document.addEventListener('DOMContentLoaded', init);
