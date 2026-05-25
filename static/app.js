@@ -1,6 +1,41 @@
 /* app.js — SRE Tracker Frontend — Escala 12x36, modelo por datas */
 'use strict';
 
+// ── Definições de badges de curso ────────────────────────────────────────────
+const COURSE_BADGE_DEFS = [
+  { id: 'sre-mindset',  name: 'SRE Mindset',    emoji: '🧠', color: '#00d4ff',
+    kw: ['SRE DevOps Jornada', 'Google SRE Book', 'IA Aplicada a SRE'] },
+  { id: 'linux',        name: 'GNU/Linux',        emoji: '🐧', color: '#00e5a0',
+    kw: ['GNU/Linux', 'Linux Journey', 'The Linux Command Line', 'OverTheWire Bandit'] },
+  { id: 'networking',   name: 'Networking',       emoji: '🌐', color: '#5b8dee',
+    kw: ['Practical Networking'] },
+  { id: 'python',       name: 'Python DevOps',    emoji: '🐍', color: '#ffab40',
+    kw: ['Python para DevOps', 'Automate the Boring Stuff'] },
+  { id: 'git',          name: 'Git Pro',          emoji: '🌿', color: '#00e5a0',
+    kw: ['Learn Git Branching', 'Pro Git Book'] },
+  { id: 'sql',          name: 'SQL',              emoji: '🗄️', color: '#5b8dee',
+    kw: ['SQLBolt'] },
+  { id: 'flask',        name: 'Flask DevOps',     emoji: '🍶', color: '#ff6b35',
+    kw: ['Flask API DevOps'] },
+  { id: 'aws',          name: 'AWS SAA-C03',      emoji: '☁️', color: '#FF9900',
+    kw: ['AWS SAA-C03', 'Flashcards AWS', 'Simulado'] },
+  { id: 'terraform',    name: 'Terraform',        emoji: '🏗️', color: '#9b78e8',
+    kw: ['Terraform Essentials', 'Terraform conclusão'] },
+  { id: 'ansible',      name: 'Ansible + AWX',    emoji: '⚙️', color: '#00e5a0',
+    kw: ['Ansible para SysAdmin', 'Ansible conclusão', 'AWX para SysAdmin', 'AWX'] },
+  { id: 'github-ci',    name: 'GitHub Actions',   emoji: '🔄', color: '#00d4ff',
+    kw: ['GitHub Actions'] },
+  { id: 'kubernetes',   name: 'Kubernetes',       emoji: '⎈',  color: '#5b8dee',
+    kw: ['Kubernetes', 'KillerCoda K8s', 'CKA prep'] },
+  { id: 'prometheus',   name: 'Prometheus',       emoji: '🔥', color: '#ff4560',
+    kw: ['Prometheus'] },
+  { id: 'zabbix',       name: 'Zabbix Expert',    emoji: '🧪', color: '#ff6b35', tag: 'zabbix' },
+  { id: 'capstone',     name: 'Capstone',         emoji: '🎯', color: '#ffab40',
+    kw: ['Capstone'] },
+  { id: 'english',      name: 'English SRE',      emoji: '🗣️', color: '#9b78e8',
+    kw: ['Alura Línguas'] },
+];
+
 // ── Estado global ────────────────────────────────────────────────────────────
 const State = {
   progress: {},       // { lesson_id: { status, note } }
@@ -162,6 +197,7 @@ function navigateTo(view) {
     dashboard:    { title: '⬡ Dashboard',       meta: 'Visão geral · escala 12x36 · Mai–Dez 2026' },
     cronograma:   { title: '📅 Cronograma',      meta: '36 semanas · 5 fases · datas reais da escala' },
     milestones:   { title: '✓ Milestones',       meta: 'Checkpoints por fase' },
+    conquistas:   { title: '🏅 Conquistas',      meta: 'Badges por curso e fase concluídos' },
     zabbixlabs:   { title: '🧪 Labs Zabbix',     meta: '30 labs semanais · expertise em monitoramento' },
     estatisticas: { title: '📊 Estatísticas',    meta: 'Horas, distribuição, progresso por fase' },
     exportar:     { title: '📤 Exportar',         meta: 'Backup do seu progresso' },
@@ -175,6 +211,7 @@ function navigateTo(view) {
     dashboard:    renderDashboard,
     cronograma:   renderCronograma,
     milestones:   renderMilestones,
+    conquistas:   renderConquistas,
     zabbixlabs:   renderZabbixLabs,
     estatisticas: renderEstatisticas,
     exportar:     renderExportar,
@@ -993,6 +1030,10 @@ async function saveLesson() {
   const status = State.selectedStatus || 'pending';
   const note = document.getElementById('m-note').value.trim();
 
+  const earnedBefore = status === 'done'
+    ? new Set(computeBadges().all.filter(b => b.earned).map(b => b.id))
+    : null;
+
   try {
     await apiPost(`/api/progress/${lid}`, { status, note });
     State.progress[lid] = { status, note };
@@ -1002,10 +1043,15 @@ async function saveLesson() {
     closeModal();
     showToast(status === 'done' ? '✓ Concluído!' : status === 'skipped' ? '✗ Marcado como pulado' : '○ Marcado como pendente');
 
-    // Re-renderizar a view atual
+    if (earnedBefore) {
+      const newlyEarned = computeBadges().all.filter(b => b.earned && !earnedBefore.has(b.id));
+      if (newlyEarned.length > 0) setTimeout(() => showBadgeCelebration(newlyEarned[0]), 400);
+    }
+
     if (State.currentView === 'dashboard') renderDashboard();
     else if (State.currentView === 'cronograma') renderCronograma();
     else if (State.currentView === 'zabbixlabs') renderZabbixLabs();
+    else if (State.currentView === 'conquistas') renderConquistas();
   } catch (e) {
     showToast('Erro ao salvar', true);
   }
@@ -1099,6 +1145,119 @@ function renderZabbixLabs() {
 
   html += `</div>`;
   document.getElementById('view-content').innerHTML = html;
+}
+
+// ── VIEW: Conquistas ─────────────────────────────────────────────────────────
+function computeBadges() {
+  const PHASE_EMOJIS  = ['🌱', '⚙️', '☁️', '🚀', '🏆'];
+  const PHASE_COLORS  = ['#00e5a0', '#5b8dee', '#FF9900', '#9b78e8', '#00d4ff'];
+
+  const courseBadges = COURSE_BADGE_DEFS.map(def => {
+    const matches = [];
+    for (const [, wData] of Object.entries(WEEKS)) {
+      for (const [date, dateData] of Object.entries(wData.dates)) {
+        dateData.lessons.forEach((lesson, i) => {
+          const hit = def.tag
+            ? lesson.tag === def.tag
+            : (def.kw || []).some(kw => lesson.name.startsWith(kw));
+          if (hit) {
+            const lid = `${date}-${i}`;
+            matches.push({ lid, status: State.progress[lid]?.status || 'pending' });
+          }
+        });
+      }
+    }
+    const total = matches.length;
+    const done  = matches.filter(m => m.status === 'done').length;
+    return { ...def, total, done, earned: total > 0 && done === total, type: 'course' };
+  }).filter(b => b.total > 0);
+
+  const phaseBadges = (State.stats?.by_phase || []).map(ph => ({
+    id: `phase-${ph.phase}`,
+    name: ph.label.replace(`Fase ${ph.phase} — `, ''),
+    emoji: PHASE_EMOJIS[ph.phase - 1],
+    color: PHASE_COLORS[ph.phase - 1],
+    done: ph.done, total: ph.total, pct: ph.pct,
+    earned: ph.pct === 100,
+    type: 'phase', phase: ph.phase,
+  }));
+
+  const s = State.stats || {};
+  const masterBadge = {
+    id: 'sre-master', name: 'SRE Master', emoji: '⭐', color: '#ffab40',
+    done: s.done || 0, total: s.total || 0, pct: s.pct || 0,
+    earned: (s.pct || 0) === 100, type: 'special',
+  };
+
+  return { courseBadges, phaseBadges, masterBadge, all: [...phaseBadges, ...courseBadges, masterBadge] };
+}
+
+function badgeCardHtml(b, sub) {
+  const earned = b.earned;
+  const borderStyle = earned ? `border-color:${b.color}55;box-shadow:0 0 14px ${b.color}22;` : '';
+  const bgStyle     = earned ? `background:linear-gradient(135deg,${b.color}0a 0%,transparent 100%);` : '';
+  const nameColor   = earned ? `color:${b.color}` : 'color:var(--muted2)';
+  const statusColor = earned ? `color:${b.color};background:${b.color}15` : 'color:var(--muted2)';
+  return `
+    <div class="badge-card ${earned ? 'earned' : 'locked'}" style="${borderStyle}${bgStyle}">
+      <div class="badge-emoji">${b.emoji}</div>
+      <div class="badge-name" style="${nameColor}">${b.name}</div>
+      <div class="badge-sub">${sub}</div>
+      <div class="badge-status" style="${statusColor}">${earned ? '✓ CONQUISTADO' : '🔒 BLOQUEADO'}</div>
+    </div>`;
+}
+
+function renderConquistas() {
+  const { courseBadges, phaseBadges, masterBadge, all } = computeBadges();
+  const earned = all.filter(b => b.earned).length;
+  const total  = all.length;
+  const pct    = total ? Math.round(earned / total * 100) : 0;
+
+  let html = `
+    <div class="badges-summary">
+      <div class="badges-summary-num">${earned}<span>/${total}</span></div>
+      <div class="badges-summary-label">badges conquistados</div>
+      <div class="badges-prog-bar">
+        <div class="badges-prog-fill" style="width:${pct}%"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Fases Concluídas</div>
+    <div class="badges-grid">
+      ${phaseBadges.map(b => badgeCardHtml(b, `Fase ${b.phase} · ${b.pct}% · ${b.done}/${b.total} lições`)).join('')}
+    </div>
+
+    <div class="section-title">Cursos Concluídos</div>
+    <div class="badges-grid">
+      ${courseBadges.map(b => badgeCardHtml(b, `${b.done}/${b.total} lições`)).join('')}
+    </div>
+
+    <div class="section-title">Badge Especial</div>
+    <div class="badges-grid">
+      ${badgeCardHtml(masterBadge, `${masterBadge.done}/${masterBadge.total} lições totais`)}
+    </div>`;
+
+  document.getElementById('view-content').innerHTML = html;
+}
+
+function showBadgeCelebration(badge) {
+  const el = document.createElement('div');
+  el.className = 'badge-celebration';
+  el.innerHTML = `
+    <div class="badge-celebration-inner" style="border-color:${badge.color}55">
+      <div class="badge-celebration-sparkles">✨ ✨ ✨</div>
+      <div class="badge-celebration-emoji">${badge.emoji}</div>
+      <div class="badge-celebration-title">Badge Conquistado!</div>
+      <div class="badge-celebration-name" style="color:${badge.color}">${badge.name}</div>
+      <div class="badge-celebration-sub">Continue assim! 🚀</div>
+      <button class="btn btn-primary" onclick="this.closest('.badge-celebration').remove()">INCRÍVEL!</button>
+    </div>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('open'));
+  setTimeout(() => {
+    el.classList.remove('open');
+    setTimeout(() => el.remove(), 400);
+  }, 5000);
 }
 
 // ── Start ────────────────────────────────────────────────────────────────────
