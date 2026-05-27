@@ -1,10 +1,12 @@
 """
 database.py — SQLAlchemy setup + SQLite connection
 """
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = "sqlite:///./sre_tracker.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sre_tracker.db")
 
 engine = create_engine(
     DATABASE_URL,
