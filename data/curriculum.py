@@ -9,6 +9,8 @@ Regras da escala:
 Lesson ID: "{YYYY-MM-DD}-{idx}"  ex: "2026-06-02-0"
 """
 
+from datetime import date as _date
+
 # ── Helpers internos ──────────────────────────────────────────────────────────
 def _a(name, h, block="manha", tag=None):
     return {"name": name, "h": h, "tag": tag, "block": block, "type": "aula"}
@@ -34,6 +36,44 @@ def _z(name, h=1, block="zabbix"):
 
 def _proj(name, h=2, block="manha"):
     return {"name": name, "h": h, "tag": None, "block": block, "type": "projeto"}
+
+def _ia(name, h=2, block="manha", provider=""):
+    """Aula de IA/LLM — Prompt Engineering, Claude API, LangChain etc."""
+    return {"name": name, "h": h, "tag": "ia", "block": block, "type": "aula", "provider": provider}
+
+def _eng(h=0.5):
+    """Udemy English — Inglês Extremo (trilha paralela, passivo)."""
+    return {"name": "Udemy English — Inglês Extremo", "h": h, "tag": "book", "block": "passivo", "type": "aula", "provider": "Udemy"}
+
+
+# ── Escala 12x36 — regras por mês (v2.1) ─────────────────────────────────────
+# A regra de paridade inverte em alguns meses por causa do ciclo 12+36=48h.
+# "even_off" = dias pares são FOLGA | "odd_off" = dias ímpares são FOLGA
+SCALE_RULES = {
+    (2026, 6):  "even_off",   # jun: pares = folga
+    (2026, 7):  "even_off",   # jul: pares = folga
+    (2026, 8):  "odd_off",    # ago: ímpares = folga  ← inverte
+    (2026, 9):  "even_off",   # set: pares = folga
+    (2026, 10): "even_off",   # out: pares = folga
+    (2026, 11): "odd_off",    # nov: ímpares = folga  ← inverte
+    (2026, 12): "odd_off",    # dez: ímpares = folga
+    (2027, 1):  "even_off",   # jan: pares = folga
+    (2027, 2):  "odd_off",    # fev: ímpares = folga  ← inverte
+}
+
+START_DATE = _date(2026, 6, 2)  # IMUTÁVEL — não alterar por nenhum motivo
+
+
+def get_day_type(d):
+    """Retorna 'FOLGA' ou 'TRABALHO' para uma data usando a escala real 12x36."""
+    if isinstance(d, str):
+        d = _date.fromisoformat(d)
+    rule = SCALE_RULES.get((d.year, d.month))
+    if rule is None:
+        return "FOLGA" if d.day % 2 == 0 else "TRABALHO"
+    is_odd = d.day % 2 != 0
+    is_off = (rule == "odd_off" and is_odd) or (rule == "even_off" and not is_odd)
+    return "FOLGA" if is_off else "TRABALHO"
 
 
 # ── Fases ─────────────────────────────────────────────────────────────────────
@@ -1198,5 +1238,57 @@ def _inject_zabbix_labs():
             }
 
 
+# ── Cursos de IA — v2.1 ──────────────────────────────────────────────────────
+# 12 lições distribuídas em 3 cursos conforme CRONOGRAMA_v2.1_COM_CLAUDE_IA.md
+IA_LESSONS = [
+    # --- Curso A: Prompt Engineering Avançado (Deeplearning.AI) — 6h, S02–S04 ---
+    ("2026-06-09", _ia("Prompt Engineering — Lições 1-2: básico + chain-of-thought", 2, "manha", "Deeplearning.AI")),
+    ("2026-06-17", _ia("Prompt Engineering — Lições 3-4: few-shot, system prompts SRE", 2, "manha", "Deeplearning.AI")),
+    ("2026-06-23", _ia("Prompt Engineering — Lições 5-6: SRE troubleshooting prompts (conclusão)", 2, "manha", "Deeplearning.AI")),
+    # --- Curso B: Build with Claude API (Anthropic Academy) — 10h, S19–S22 ---
+    ("2026-10-02", _ia("Build with Claude API — Lessons 1-2: tool definition, agent loop", 2, "tarde", "Anthropic Academy")),
+    ("2026-10-08", _ia("Build with Claude API — Lessons 3-4: error handling, streaming", 2, "tarde", "Anthropic Academy")),
+    ("2026-10-16", _ia("Build with Claude API — Lesson 5: context management, advanced", 2, "tarde", "Anthropic Academy")),
+    ("2026-10-22", _ia("Build with Claude API — Projeto: SRE Agent v1", 2, "tarde", "Anthropic Academy")),
+    ("2026-10-24", _ia("Build with Claude API — Refinamento + testes (conclusão)", 2, "tarde", "Anthropic Academy")),
+    # --- Curso C: LangChain RAG + Memory (LangChain Academy) — 8h, S21–S23 ---
+    ("2026-10-18", _ia("LangChain RAG — Lessons 1-2: embeddings, vector stores", 2, "manha", "LangChain Academy")),
+    ("2026-10-24", _ia("LangChain RAG — Lessons 3-4: memory, chains, retrieval", 2, "manha", "LangChain Academy")),
+    ("2026-10-26", _ia("LangChain RAG — RAG completo", 2, "manha", "LangChain Academy")),
+    ("2026-10-31", _ia("LangChain RAG — Projeto: Runbook Vector Store (conclusão)", 2, "tarde", "LangChain Academy")),
+]
+
+
+def _inject_ia_courses():
+    """Injeta os 3 cursos de IA (12 lições). Garante type=F nas datas das lições."""
+    date_index = {}
+    for week_data in WEEKS.values():
+        for date_str, date_data in week_data["dates"].items():
+            date_index[date_str] = date_data
+
+    for date_str, lesson in IA_LESSONS:
+        if date_str in date_index:
+            date_data = date_index[date_str]
+            date_data["type"] = "F"  # lições IA requerem dia de folga
+            date_data["lessons"].append(lesson)
+
+
+def _inject_udemy_english():
+    """Injeta Udemy English 'Inglês Extremo' como trilha paralela nos dias de trabalho.
+
+    Intensidade cresce ao longo do programa:
+      weeks  5–13 → 0.5h/dia  (S01–S09 v2.1)
+      weeks 14–22 → 1.0h/dia  (S10–S18 v2.1)
+      weeks 23–36 → 1.5h/dia  (S19–S36 v2.1)
+    """
+    for week_num, week_data in WEEKS.items():
+        h = 0.5 if week_num <= 13 else (1.0 if week_num <= 22 else 1.5)
+        for date_str, date_data in week_data["dates"].items():
+            if date_data["type"] == "T":
+                date_data["lessons"].append(_eng(h))
+
+
 # Executar injeção ao importar o módulo
 _inject_zabbix_labs()
+_inject_ia_courses()
+_inject_udemy_english()

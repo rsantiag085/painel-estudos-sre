@@ -851,6 +851,12 @@ body {
 /* v2.0 — Zabbix Labs badge laranja especial */
 .tag-zabbix  { background: rgba(255,159,28,0.15);  color: #FF9F1C; border: 1px solid rgba(255,159,28,0.4); font-weight: 800; letter-spacing: 1px; }
 
+/* v2.1 — IA/LLM badge roxo especial */
+.tag-ia { background: rgba(168,85,247,0.15); color: #a855f7; border: 1px solid rgba(168,85,247,0.4); font-weight: 800; letter-spacing: 1px; }
+.lesson-card[data-tag="ia"] { border-left: 3px solid #a855f7; }
+.lesson-card[data-tag="ia"]:hover { border-color: #a855f7; box-shadow: 0 0 8px rgba(168,85,247,0.2); }
+.lesson-card[data-tag="ia"] .lesson-name { color: #a855f7; }
+
 /* Lesson card — variante Lab Zabbix */
 .lesson-card[data-tag="zabbix"] {
   border-left: 3px solid #FF9F1C;
