@@ -228,6 +228,7 @@ function tagHtml(tag) {
     book:   ['LIVRO',   'tag-book'],
     aws:    ['AWS',     'tag-aws'],
     zabbix: ['🧪 ZABBIX', 'tag-zabbix'],  // v2.0
+    ia:     ['🤖 IA',    'tag-ia'],       // v2.1
   };
   const [label, cls] = map[tag] || [tag.toUpperCase(), ''];
   return `<span class="lesson-tag ${cls}">${label}</span>`;
