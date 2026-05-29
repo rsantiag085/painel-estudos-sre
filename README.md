@@ -2,7 +2,7 @@
 
 Sistema de acompanhamento de estudos SRE com **36 semanas**, **5 fases** e ~213h de conteúdo.
 
-> **Cronograma:** Maio 25 – Dezembro 31, 2026 &nbsp;|&nbsp; **NOC Sênior → SRE** &nbsp;|&nbsp; **30 Labs Zabbix**
+> **Cronograma:** Junho 02, 2026 – Fevereiro 28, 2027 &nbsp;|&nbsp; **NOC Sênior → SRE** &nbsp;|&nbsp; **30 Labs Zabbix**
 
 ---
 
