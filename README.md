@@ -1,149 +1,536 @@
 # SRE Tracker — Robson Santiago
 
-Sistema de acompanhamento de estudos SRE com **36 semanas**, **5 fases** e ~213h de conteúdo.
+Aplicação local para organizar uma trilha de estudos de SRE/DevOps adaptada à escala 12x36.
 
-> **Cronograma:** Junho 02, 2026 – Fevereiro 28, 2027 &nbsp;|&nbsp; **NOC Sênior → SRE** &nbsp;|&nbsp; **30 Labs Zabbix**
+O sistema deixa de operar como um calendário rígido e passa a trabalhar com:
 
----
+- fila ordenada de atividades;
+- slots de estudo gerados pela escala real;
+- reagendamento automático;
+- progresso por competência;
+- cursos principais e trilhas paralelas;
+- projetos de portfólio;
+- histórico de execução.
 
-## 🎯 Objetivo
-
-Transformar de **NOC Sênior** em **SRE Engineer** seguindo o roadmap SRE Medium completo (15/15 hard skills), aproveitando a expertise atual em Zabbix como diferencial de carreira.
-
----
-
-## 📊 Estrutura do Programa
-
-| Item | Quantidade | Horas |
-|------|-----------|-------|
-| Semanas | 36 (Mai–Dez 2026) | — |
-| Fases | 5 | — |
-| Cursos pagos | 12 | ~163h |
-| Recursos gratuitos | 13 | ~50h |
-| Labs Zabbix | 30 (1/semana) | ~30h |
-| Escala 12x36 | 4h/folga + 0.5h/plantão | ~560h disponíveis |
+> **Data-base da escala:** 05/08/2026 = FOLGA  
+> **Meta mínima:** 2h nas folgas e 1h nos dias de trabalho  
+> **Objetivo:** transição sustentável de Monitoramento para SRE/DevOps remoto
 
 ---
 
-## 📅 Fases do Cronograma
+## Objetivo
 
-| Fase | Semanas | Tema | Conteúdo |
-|------|---------|------|----------|
-| 1 | S05–S08 | Foundation | Linux, Networking, Bash, SRE Mindset |
-| 2 | S09–S12 | Core Skills | Python, Git, SQL, Docker |
-| 3 | S13–S22 | Cloud & IaC | AWS SAA-C03, Terraform, Ansible, AWX |
-| 4 | S23–S29 | Advanced SRE | GitHub Actions, Kubernetes, Prometheus, Incident Management |
-| 5 | S30–S36 | Capstone & Carreira | Projeto final, portfolio, preparação carreira |
+Preparar Robson para concorrer a vagas de:
 
----
+- Site Reliability Engineer;
+- DevOps Engineer;
+- Cloud Operations Engineer;
+- Platform Engineer;
+- Analista de Infraestrutura com foco em automação;
+- Analista de Observabilidade.
 
-## 🧪 Labs Zabbix (30 total)
+A aplicação deve ajudar a consolidar competências em:
 
-Labs práticos semanais para consolidar expertise em monitoramento — **diferencial de carreira**:
+```text
+Linux e redes
+→ Git, SQL e Python
+→ Docker
+→ AWS
+→ Terraform e Ansible
+→ GitHub Actions
+→ Kubernetes
+→ Prometheus, Grafana e OpenTelemetry
+→ SLI, SLO, error budget e incidentes
+```
 
-| Lab | Semana | Tema |
-|-----|--------|------|
-| #1  | S05 | Zabbix agent install em VM Ubuntu |
-| #2  | S06 | Custom network monitoring items |
-| #3  | S07 | Bash external check integrado |
-| #4  | S08 | Scripts bash no GitHub |
-| #5  | S09 | Python consome Zabbix API |
-| ... | ... | ... |
-| #27 | S31 | Zabbix on K8s (capstone) |
-| #28 | S32 | Prometheus + Zabbix integração |
-| #29 | S33 | SLO dashboard Zabbix completo |
-| #30 | S34 | End-to-end automated incident response |
-
-Veja a lista completa em `COURSES.md` ou no painel em **🧪 Labs Zabbix**.
+O Zabbix permanece como diferencial técnico, integrado aos projetos e laboratórios.
 
 ---
 
-## 🎓 15 Hard Skills (100% cobertas)
+## Princípios do cronograma
 
-| # | Skill | Curso/Recurso |
-|---|-------|--------------|
-| 1 | Linux Fundamentals | GNU/Linux Admin (9h) |
-| 2 | Networking Basics | Redes para DevOps (6-8h) |
-| 3 | Bash Scripting | Linux Admin + OverTheWire |
-| 4 | Git/Version Control | YouTube Playlist (6-8h) |
-| 5 | Python Programming | Python para DevOps (7.5h) |
-| 6 | Databases Basics | SQL (4-6h) |
-| 7 | Docker Containerization | Play with Docker + Flask (14h) |
-| 8 | Cloud (AWS) | AWS SAA-C03 (30.5h) |
-| 9 | Ansible | Ansible + AWX (27h) |
-| 10 | Monitoring & Observability | Prometheus + Grafana + Zabbix |
-| 11 | CI/CD Pipelines | GitHub Actions (7h) |
-| 12 | Kubernetes | K8s Completo (19h) |
-| 13 | Incident Management | Google SRE Book + prático (gratuito) |
-| 14 | IaC (Terraform) | Terraform Essentials (5h) |
-| 15 | Soft Skills | Contínuo ao longo do cronograma |
+### Sem prazo final rígido
+
+O sistema não deve considerar o aluno atrasado por não concluir uma atividade em uma data específica.
+
+O progresso será medido por:
+
+- atividades concluídas;
+- blocos de estudo realizados;
+- horas práticas;
+- competências consolidadas;
+- projetos entregues;
+- revisões concluídas.
+
+### Uma trilha principal por vez
+
+A aplicação deve manter:
+
+1. um curso técnico principal;
+2. uma trilha paralela obrigatória, quando existente:
+   - AWS re/Start;
+   - Canvas;
+   - Google Cloud Skills.
+
+### Prática obrigatória
+
+Cada curso deve gerar pelo menos um resultado concreto:
+
+- laboratório;
+- script;
+- pipeline;
+- dashboard;
+- infraestrutura;
+- documentação;
+- runbook;
+- post-mortem;
+- projeto de portfólio.
 
 ---
 
-## 🚀 Como Rodar
+## Escala 12x36
+
+A escala é calculada pela sequência de dias corridos.
+
+```python
+from datetime import date
+
+SCALE_ANCHOR = date(2026, 8, 5)  # FOLGA
+
+def get_day_type(current_date: date) -> str:
+    days = (current_date - SCALE_ANCHOR).days
+    return "FOLGA" if days % 2 == 0 else "TRABALHO"
+```
+
+Não utilizar regras mensais de dias pares ou ímpares.
+
+### Slots de folga
+
+| Slot | Horário sugerido | Tipo |
+|---|---|---|
+| F1 | 13h30–14h00 | teoria |
+| F2 | 14h10–14h40 | teoria ou exercício |
+| F3 | 15h20–15h50 | laboratório |
+| F4 | 16h00–16h30 | laboratório, revisão ou AWS |
+
+Carga mínima: 2 horas.
+
+### Slots de trabalho
+
+| Slot | Horário sugerido | Tipo |
+|---|---|---|
+| T1 | 7h00–7h30 | curso principal |
+| T2 | intervalo de almoço | revisão ou AWS |
+
+Carga mínima: 1 hora.
+
+---
+
+## Reagendamento
+
+Os IDs das atividades não podem conter datas.
+
+Exemplo:
+
+```text
+linux-admin-sec03-lesson01
+python-devops-alert-router-setup
+terraform-state-backend-lab
+```
+
+Estados esperados:
+
+| Status | Significado |
+|---|---|
+| `pending` | não iniciada |
+| `in_progress` | iniciada |
+| `done` | concluída |
+| `deferred` | adiada e devolvida à fila |
+| `blocked` | depende de recurso ou pré-requisito |
+| `skipped` | retirada conscientemente |
+| `cancelled` | removida definitivamente |
+
+Ao marcar uma atividade como não feita:
+
+1. registrar o slot perdido;
+2. alterar o status para `deferred`;
+3. devolver a atividade à fila;
+4. alocar o próximo slot compatível;
+5. preservar atividades concluídas;
+6. não recalcular manualmente todo o calendário.
+
+---
+
+## Fases da trilha
+
+| Fase | Tema | Conteúdo |
+|---|---|---|
+| 1 | Fundamentos operacionais | Linux, redes, Git, SQL e Python |
+| 2 | Containers, cloud e IaC | Docker, AWS, Terraform e Ansible |
+| 3 | CI/CD e orquestração | GitHub Actions, Kubernetes e Flask API |
+| 4 | Observabilidade e SRE | Prometheus, Grafana, OpenTelemetry, SLO e incidentes |
+| 5 | Especializações e carreira | Zabbix avançado, AWX, Google Cloud, IA e portfólio |
+
+A lista detalhada de cursos está em [`COURSES.md`](./COURSES.md).
+
+O contexto e as regras do projeto estão em [`MANUAL_PROJETO_SRE.md`](./MANUAL_PROJETO_SRE.md).
+
+---
+
+## Projetos de portfólio
+
+### Linux, Ansible e Zabbix
+
+Demonstrar:
+
+- administração Linux;
+- scripts Bash;
+- automação com Ansible;
+- instalação do Zabbix Agent;
+- template e LLD;
+- troubleshooting;
+- documentação.
+
+### Flask API em AWS e Kubernetes
+
+Demonstrar:
+
+- Python;
+- testes;
+- Docker;
+- CI/CD;
+- Terraform;
+- AWS;
+- Kubernetes;
+- Helm;
+- segurança;
+- deploy.
+
+### Observabilidade e confiabilidade
+
+Demonstrar:
+
+- Prometheus;
+- Grafana;
+- Loki;
+- Tempo ou Jaeger;
+- OpenTelemetry;
+- SLI;
+- SLO;
+- error budget;
+- alerta;
+- runbook;
+- post-mortem.
+
+### Assistente agêntico controlado
+
+Demonstrar:
+
+- leitura de alertas;
+- coleta autorizada de contexto;
+- sugestão de diagnóstico;
+- aprovação humana;
+- auditoria.
+
+---
+
+## Trilhas paralelas
+
+### AWS re/Start
+
+Enquanto estiver ativo, o AWS re/Start faz parte da carga oficial do cronograma.
+
+A aplicação deve permitir registrar:
+
+- aulas;
+- módulos do Canvas;
+- exercícios;
+- revisões;
+- pendências.
+
+### Google Cloud Skills
+
+Programa principal:
+
+```text
+Professional Cloud DevOps Engineer
+https://www.skills.google/paths/20
+```
+
+Recursos disponíveis:
+
+- 30 créditos mensais;
+- US$ 10 mensais para Google Cloud.
+
+Frequência sugerida:
+
+- a cada quarta folga;
+- substituir dois blocos da trilha principal;
+- não adicionar como terceira trilha simultânea.
+
+---
+
+## Como executar
+
+### Requisitos
+
+- Python 3.12 ou compatível;
+- ambiente virtual recomendado;
+- SQLite para desenvolvimento local.
+
+### Instalação
 
 ```bash
-# Instalar dependências
-pip install -r requirements.txt
+cd ~/projetos/painel-estudos-sre
 
-# Iniciar o servidor
+python -m venv .venv
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+### Inicialização
+
+```bash
 python main.py
 ```
 
-Abre automaticamente em `http://localhost:8000`
+A aplicação deve ficar disponível em:
 
-### Endpoints da API
-
-| Endpoint | Descrição |
-|----------|-----------|
-| `GET /api/stats` | Estatísticas gerais + Labs Zabbix KPIs |
-| `GET /api/progress` | Todo o progresso |
-| `GET /api/progress/labs` | Somente Labs Zabbix |
-| `GET /api/progress/week/{n}` | Progresso de uma semana |
-| `GET /api/progress/next?limit=3` | Próximas lições pendentes |
-| `GET /api/export` | Exportar backup JSON |
-| `POST /api/import` | Restaurar backup JSON |
-
----
-
-## 📈 Projeção de Carreira (Jan 2027)
-
-**SRE Engineer Junior/Mid-level** com expertise em:
-
-- ✅ Linux + Networking + Bash (avançado)
-- ✅ Python + SQL + Git (intermediário)
-- ✅ AWS + Terraform + Ansible (intermediário)
-- ✅ Kubernetes + CI/CD (intermediário)
-- ✅ Monitoring: Prometheus + Grafana + **Zabbix** (avançado — diferencial!)
-- ✅ Incident Management (intermediário)
-
-**Portfolio:** 30+ repos Zabbix labs + 1 sistema capstone production-ready
-
----
-
-## 📁 Estrutura do Projeto
-
+```text
+http://localhost:8000
 ```
+
+Caso o projeto utilize Uvicorn diretamente:
+
+```bash
+uvicorn main:app --reload
+```
+
+---
+
+## API atual
+
+### Cursos e atividades
+
+| Método | Endpoint | Finalidade |
+|---|---|---|
+| `GET` | `/api/courses` | listar cursos |
+| `GET` | `/api/courses/{course_id}` | detalhes de um curso |
+| `GET` | `/api/activities` | listar atividades |
+| `GET` | `/api/activities/next` | próxima atividade alocável |
+| `GET` | `/api/activities/{activity_id}` | detalhes e progresso de uma atividade |
+| `GET` | `/api/activities/{activity_id}/history` | histórico da atividade |
+| `POST` | `/api/activities/{activity_id}/start` | iniciar atividade alocada |
+| `POST` | `/api/activities/{activity_id}/complete` | concluir atividade |
+| `POST` | `/api/activities/{activity_id}/defer` | registrar não feito/adiamento e reagendar |
+| `POST` | `/api/activities/{activity_id}/block` | bloquear atividade |
+| `POST` | `/api/activities/{activity_id}/skip` | pular atividade |
+| `POST` | `/api/activities/{activity_id}/cancel` | cancelar atividade |
+| `POST` | `/api/activities/{activity_id}/note` | adicionar nota sem mudar o estado |
+
+### Agenda e escala
+
+| Método | Endpoint | Finalidade |
+|---|---|---|
+| `GET` | `/api/schedule/today` | agenda do dia |
+| `GET` | `/api/schedule/range` | agenda por período |
+| `POST` | `/api/schedule/generate` | gerar slots idempotentemente e, opcionalmente, alocar atividades |
+| `POST` | `/api/schedule/slots/{slot_id}/allocate` | alocar a próxima atividade ou uma atividade específica |
+
+### Progresso
+
+| Método | Endpoint | Finalidade |
+|---|---|---|
+| `GET` | `/api/progress/summary` | progresso geral |
+| `GET` | `/api/progress/phases` | progresso por fase |
+| `GET` | `/api/progress/courses` | progresso por curso |
+| `GET` | `/api/history` | histórico de execução |
+| `GET` | `/api/stats` | estatísticas consolidadas |
+
+### Backup
+
+| Método | Endpoint | Finalidade |
+|---|---|---|
+| `GET` | `/api/export` | exportar dados |
+| `POST` | `/api/import` | restaurar dados |
+
+---
+
+## Modelo de dados implementado
+
+### Course
+
+```python
+{
+    "id": "linux-admin",
+    "name": "Administração de Sistemas GNU/Linux",
+    "provider": "Udemy",
+    "url": "https://...",
+    "video_hours": 9.18,
+    "priority": "very_high",
+    "execution": "full",
+    "phase": 1,
+    "status": "available",
+}
+```
+
+### Activity
+
+```python
+{
+    "id": "linux-admin-sec03-lesson01",
+    "course_id": "linux-admin",
+    "sequence": 1,
+    "name": "Pipes e redirecionamentos",
+    "duration_minutes": 30,
+    "activity_type": "lesson",
+    "preferred_day_type": "ANY",
+    "preferred_slot": "THEORY",
+    "status": "pending",
+}
+```
+
+### StudySlot
+
+```python
+{
+    "id": "2026-08-05-F1",
+    "study_date": "2026-08-05",
+    "day_type": "FOLGA",
+    "slot_code": "F1",
+    "start_time": "13:30",
+    "duration_minutes": 30,
+    "slot_type": "THEORY",
+    "activity_id": None,
+    "status": "available",
+}
+```
+
+### ActivityHistory
+
+```python
+{
+    "activity_id": "linux-admin-sec03-lesson01",
+    "slot_id": "2026-08-05-F1",
+    "event_type": "deferred",
+    "note": "Atendimento inesperado",
+    "created_at": "2026-08-05T14:05:00",
+}
+```
+
+---
+
+## Estrutura atual do projeto
+
+```text
 painel-estudos-sre/
-├── main.py              # FastAPI app + lifespan
-├── models.py            # SQLAlchemy ORM (LessonProgress, WeekNote, Milestone)
-├── schemas.py           # Pydantic schemas
-├── database.py          # SQLite setup
+├── main.py
+├── models.py
+├── schemas.py
+├── database.py
 ├── data/
-│   └── curriculum.py    # Cronograma completo (36 semanas + 30 labs Zabbix)
+│   └── curriculum.py
 ├── routers/
-│   ├── progress.py      # CRUD progresso + /labs + /week + /next
-│   ├── stats.py         # Estatísticas + Labs Zabbix KPIs
-│   ├── milestones.py    # Milestones por fase
-│   └── notes.py         # Notas por semana
+│   ├── activities.py
+│   ├── courses.py
+│   ├── history.py
+│   ├── schedule.py
+│   ├── progress.py
+│   ├── stats.py
+│   ├── milestones.py
+│   └── serializers.py
+├── services/
+│   ├── curriculum_seed.py
+│   ├── scale_service.py
+│   ├── scheduling_service.py
+│   └── reporting_service.py
 ├── templates/
-│   └── index.html       # App HTML com sidebar e modal
+│   └── index.html
 ├── static/
-│   ├── app.js           # Frontend SPA (Dashboard, Cronograma, Labs Zabbix, Exportar)
-│   └── style.css        # Dark theme NOC/Grafana-inspired
-└── COURSES.md           # Catálogo completo de cursos
+│   ├── app.js
+│   └── style.css
+├── COURSES.md
+├── MANUAL_PROJETO_SRE.md
+├── CHANGELOG.md
+├── STATE_SAVE.md
+└── README.md
 ```
 
 ---
 
-*v2.0 | Atualizado: Maio 2026 | 36 semanas | 30 Labs Zabbix | 100% roadmap SRE Medium*
+## Roadmap de evolução da aplicação
+
+### Concluído
+
+- documentação principal alinhada à agenda dinâmica;
+- modelos, schemas e seed do currículo;
+- escala 12x36 e geração idempotente de slots;
+- motor de alocação e reagendamento;
+- API dinâmica e compatibilidade de exportação;
+- frontend com Hoje, Fila, Cursos, Roadmap, Projetos, trilhas, Histórico e Estatísticas;
+- testes unitários, de integração e de contrato do frontend.
+
+### Próximas melhorias
+
+- paginação, busca ou filtros na Fila;
+- migrações versionadas para mudanças futuras de schema;
+- testes end-to-end adicionais para todas as ações;
+- lint e pipeline de integração contínua;
+- remoção final dos adaptadores legados quando não houver consumidores.
+
+---
+
+## Critérios de sucesso do sistema
+
+O painel será considerado funcional quando:
+
+- identificar corretamente folgas e trabalhos;
+- gerar 4 slots nas folgas;
+- gerar 2 slots nos trabalhos;
+- permitir concluir uma atividade;
+- permitir adiar sem perder a atividade;
+- alocar a atividade adiada no próximo slot compatível;
+- preservar histórico;
+- mostrar a próxima atividade correta;
+- calcular progresso por competência;
+- não depender de prazo final rígido;
+- exportar e restaurar dados.
+
+---
+
+## Direção de carreira
+
+Não é necessário concluir todo o roadmap para começar a concorrer a vagas.
+
+A candidatura pode começar quando houver domínio demonstrável de:
+
+- Linux;
+- redes;
+- Git;
+- Python ou Bash;
+- Docker;
+- fundamentos de cloud;
+- Terraform;
+- CI/CD;
+- Kubernetes básico;
+- monitoramento;
+- incidentes;
+- dois projetos documentados.
+
+---
+
+## Documentação relacionada
+
+- [`COURSES.md`](./COURSES.md): catálogo e ordem pedagógica;
+- [`MANUAL_PROJETO_SRE.md`](./MANUAL_PROJETO_SRE.md): contexto, rotina e regras;
+- [`CHANGELOG.md`](./CHANGELOG.md): histórico das alterações implementadas;
+- [`STATE_SAVE.md`](./STATE_SAVE.md): último ponto de retomada do desenvolvimento;
+- `data/curriculum.py`: fonte oficial de `COURSES` e `ACTIVITIES`;
+- `docs_planejamento/`: documentos históricos do cronograma anterior, não normativos.
+
+---
+
+*Versão 3.0 — 05/08/2026*  
+*Cronograma dinâmico para escala 12x36*  
+*Conhecimento consolidado, projetos verificáveis e transição sustentável.*

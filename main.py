@@ -24,14 +24,15 @@ from fastapi.responses import HTMLResponse
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR))
 
-from database import create_tables, SessionLocal
-from routers import progress, stats, notes, milestones
+from database import create_tables, seed_curriculum_data, SessionLocal
+from routers import activities, courses, history, milestones, schedule, stats
 
 
 # -- Lifespan (substitui on_event deprecado) ----------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
+    seed_curriculum_data()
     _seed_milestones()
     yield
 
@@ -49,21 +50,20 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 # -- Routers ------------------------------------------------------------------
-app.include_router(progress.router)
+app.include_router(courses.router)
+app.include_router(activities.router)
+app.include_router(schedule.router)
+app.include_router(history.router)
 app.include_router(stats.router)
-app.include_router(notes.router)
 app.include_router(milestones.router)
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    import json
-    from data.curriculum import PHASES, WEEKS
+    import os
     html_path = BASE_DIR / "templates" / "index.html"
     html = html_path.read_text(encoding="utf-8")
-    # Substituir os placeholders Jinja2 manualmente
-    html = html.replace("{{ phases_json | safe }}", json.dumps(PHASES))
-    html = html.replace("{{ weeks_json  | safe }}", json.dumps(WEEKS))
+    html = html.replace("{{ APP_VERSION }}", os.getenv("APP_VERSION", "dev"))
     return HTMLResponse(content=html)
 
 
@@ -77,9 +77,12 @@ def _seed_milestones():
     try:
         count = db.query(Milestone).count()
         if count == 0:
-            for phase_num, labels in MILESTONES.items():
-                for label in labels:
-                    db.add(Milestone(phase_num=phase_num, label=label, done=False))
+            for milestone in MILESTONES:
+                db.add(Milestone(
+                    phase_num=milestone["phase"],
+                    label=milestone["label"],
+                    done=False,
+                ))
             db.commit()
     finally:
         db.close()

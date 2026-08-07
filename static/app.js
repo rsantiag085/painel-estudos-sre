@@ -1,1265 +1,425 @@
-/* app.js — SRE Tracker Frontend — Escala 12x36, modelo por datas */
+/* SRE Tracker — frontend da agenda dinâmica 12x36 */
 'use strict';
 
-// ── Definições de badges de curso ────────────────────────────────────────────
-const COURSE_BADGE_DEFS = [
-  { id: 'sre-mindset',  name: 'SRE Mindset',    emoji: '🧠', color: '#00d4ff',
-    kw: ['SRE DevOps Jornada', 'Google SRE Book', 'IA Aplicada a SRE'] },
-  { id: 'linux',        name: 'GNU/Linux',        emoji: '🐧', color: '#00e5a0',
-    kw: ['GNU/Linux', 'Linux Journey', 'The Linux Command Line', 'OverTheWire Bandit'] },
-  { id: 'networking',   name: 'Networking',       emoji: '🌐', color: '#5b8dee',
-    kw: ['Practical Networking'] },
-  { id: 'python',       name: 'Python DevOps',    emoji: '🐍', color: '#ffab40',
-    kw: ['Python para DevOps', 'Automate the Boring Stuff'] },
-  { id: 'git',          name: 'Git Pro',          emoji: '🌿', color: '#00e5a0',
-    kw: ['Learn Git Branching', 'Pro Git Book'] },
-  { id: 'sql',          name: 'SQL',              emoji: '🗄️', color: '#5b8dee',
-    kw: ['SQLBolt'] },
-  { id: 'flask',        name: 'Flask DevOps',     emoji: '🍶', color: '#ff6b35',
-    kw: ['Flask API DevOps'] },
-  { id: 'aws',          name: 'AWS SAA-C03',      emoji: '☁️', color: '#FF9900',
-    kw: ['AWS SAA-C03', 'Flashcards AWS', 'Simulado'] },
-  { id: 'terraform',    name: 'Terraform',        emoji: '🏗️', color: '#9b78e8',
-    kw: ['Terraform Essentials', 'Terraform conclusão'] },
-  { id: 'ansible',      name: 'Ansible + AWX',    emoji: '⚙️', color: '#00e5a0',
-    kw: ['Ansible para SysAdmin', 'Ansible conclusão', 'AWX para SysAdmin', 'AWX'] },
-  { id: 'github-ci',    name: 'GitHub Actions',   emoji: '🔄', color: '#00d4ff',
-    kw: ['GitHub Actions'] },
-  { id: 'kubernetes',   name: 'Kubernetes',       emoji: '⎈',  color: '#5b8dee',
-    kw: ['Kubernetes', 'KillerCoda K8s', 'CKA prep'] },
-  { id: 'prometheus',   name: 'Prometheus',       emoji: '🔥', color: '#ff4560',
-    kw: ['Prometheus'] },
-  { id: 'zabbix',       name: 'Zabbix Expert',    emoji: '🧪', color: '#ff6b35', tag: 'zabbix' },
-  { id: 'capstone',     name: 'Capstone',         emoji: '🎯', color: '#ffab40',
-    kw: ['Capstone'] },
-  { id: 'english',      name: 'English SRE',      emoji: '🗣️', color: '#9b78e8',
-    kw: ['Alura Línguas'] },
-];
-
-// ── Estado global ────────────────────────────────────────────────────────────
 const State = {
-  progress: {},       // { lesson_id: { status, note } }
+  view: 'today',
+  today: null,
+  next: null,
+  courses: [],
+  activities: [],
   stats: null,
-  milestones: [],
-  weekNotes: {},      // { week_num: note }
-  currentView: 'dashboard',
-  phaseFilter: 'all',
-  currentLesson: null,  // { weekNum, date, idx, lid, lesson }
+  history: [],
+  noteActivityId: null,
 };
 
-// ── Dados do currículo injetados pelo template ────────────────────────────────
-const { PHASES, WEEKS } = window.CURRICULUM;
+const VIEW_META = {
+  today:    ['⬡ Hoje', 'Slots, foco atual e ritmo sustentável'],
+  queue:    ['≡ Fila', 'Atividades elegíveis ordenadas pelo currículo'],
+  courses:  ['▤ Cursos', 'Catálogo, prioridade e avanço por curso'],
+  roadmap:  ['◇ Roadmap', 'Evolução por competência e fase'],
+  projects: ['⌘ Projetos', 'Entregas práticas e itens de portfólio'],
+  aws:      ['☁ AWS re/Start', 'Trilha paralela de fundamentos AWS'],
+  google:   ['G Google Cloud', 'Professional Cloud DevOps Engineer'],
+  history:  ['↺ Histórico', 'Registro imutável das ações realizadas'],
+  stats:    ['▥ Estatísticas', 'Execução, progresso e distribuição'],
+};
 
-// ── Helpers de data ───────────────────────────────────────────────────────────
-const DAY_NAMES_PT = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+const PHASE_NAMES = {
+  1: 'Fundamentos Operacionais',
+  2: 'Containers, Cloud e IaC',
+  3: 'CI/CD e Orquestração',
+  4: 'Observabilidade e SRE',
+  5: 'Especializações e Carreira',
+};
 
-function formatDate(dateStr) {
-  // "2026-05-01" → "01/05"
-  const [, m, d] = dateStr.split('-');
-  return `${d}/${m}`;
-}
+const STATUS_LABELS = {
+  pending: 'Pendente', in_progress: 'Em andamento', done: 'Concluída',
+  deferred: 'Adiada', blocked: 'Bloqueada', skipped: 'Pulada',
+  cancelled: 'Cancelada', available: 'Disponível', scheduled: 'Planejado',
+  completed: 'Concluído', missed: 'Não realizado',
+};
 
-function getDayName(dateStr) {
-  // Usa T12:00 para evitar problema de fuso horário
-  const date = new Date(dateStr + 'T12:00:00');
-  return DAY_NAMES_PT[date.getDay()];
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  })[char]);
 }
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function getDayType(dateStr) {
-  const day = parseInt(dateStr.slice(8, 10), 10);
-  return day % 2 !== 0 ? 'F' : 'T';
+function formatDate(value, long = false) {
+  const date = new Date(`${value}T12:00:00`);
+  return new Intl.DateTimeFormat('pt-BR', long
+    ? { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }
+    : { day: '2-digit', month: '2-digit', year: 'numeric' }
+  ).format(date);
 }
 
-function getDayTypeLabel(type) {
-  return type === 'F' ? 'FOLGA' : 'TRABALHO';
+function formatDateTime(value) {
+  if (!value) return '—';
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).format(new Date(value));
 }
 
-function blockLabel(block) {
-  return { manha: 'Manhã 09–11h', tarde: 'Tarde 14–16h', passivo: 'Passivo' }[block] || block;
-}
-
-// ── API helpers ──────────────────────────────────────────────────────────────
-async function apiGet(path) {
-  const r = await fetch(path);
-  if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
-  return r.json();
-}
-
-async function apiPost(path, body) {
-  const r = await fetch(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
-  if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
-  return r.json();
+  if (!response.ok) {
+    let message = `Erro ${response.status}`;
+    try { message = (await response.json()).detail || message; } catch (_) {}
+    throw new Error(message);
+  }
+  if (response.status === 204) return null;
+  return response.json();
 }
 
-// ── Init ─────────────────────────────────────────────────────────────────────
-async function init() {
-  await loadProgress();
-  await loadStats();
-  await loadMilestones();
+function apiPost(path, body = {}) {
+  return api(path, { method: 'POST', body: JSON.stringify(body) });
+}
+
+async function refreshData({ quiet = false } = {}) {
+  const date = todayISO();
+  if (!quiet) showLoading('Sincronizando sua agenda...');
+  await apiPost('/api/schedule/generate', {
+    start_date: date, end_date: date, allocate: true,
+  });
+  const [today, next, courses, stats, activities] = await Promise.all([
+    api('/api/schedule/today'),
+    api('/api/activities/next'),
+    api('/api/courses'),
+    api('/api/stats'),
+    api('/api/activities?limit=500'),
+  ]);
+  Object.assign(State, { today, next, courses, stats, activities });
   renderSidebar();
-  navigateTo('dashboard');
-  setupNavListeners();
+  await renderView();
 }
 
-// ── Data loaders ─────────────────────────────────────────────────────────────
-async function loadProgress() {
-  const rows = await apiGet('/api/progress');
-  State.progress = {};
-  for (const r of rows) {
-    State.progress[r.lesson_id] = { status: r.status, note: r.note };
-  }
-}
-
-async function loadStats() {
-  State.stats = await apiGet('/api/stats');
-}
-
-async function loadMilestones() {
-  State.milestones = await apiGet('/api/milestones');
-}
-
-async function loadWeekNote(weekNum) {
-  if (State.weekNotes[weekNum] !== undefined) return;
-  const data = await apiGet(`/api/week/${weekNum}/note`);
-  State.weekNotes[weekNum] = data.note || '';
-}
-
-// ── Semana atual (primeira com lição pending) ─────────────────────────────────
-function getCurrentWeekNum() {
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
-    for (const [date, dateData] of Object.entries(wData.dates)) {
-      for (let i = 0; i < dateData.lessons.length; i++) {
-        const lid = `${date}-${i}`;
-        const status = State.progress[lid]?.status || 'pending';
-        if (status === 'pending') return parseInt(wNum);
-      }
-    }
-  }
-  return 36;
-}
-
-function getTodayInfo() {
-  const today = todayISO();
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
-    if (wData.dates[today]) {
-      return { weekNum: parseInt(wNum), date: today, dateData: wData.dates[today], weekData: wData };
-    }
-  }
-  return null;
-}
-
-// ── Sidebar ──────────────────────────────────────────────────────────────────
 function renderSidebar() {
-  const s = State.stats;
-  if (!s) return;
+  const stats = State.stats;
+  document.getElementById('sidebar-day-type').textContent = State.today?.day_type || '—';
+  document.getElementById('sidebar-date').textContent = formatDate(todayISO());
+  document.getElementById('sidebar-pct-value').textContent = `${stats?.pct || 0}%`;
+  document.getElementById('sidebar-mini-fill').style.width = `${stats?.pct || 0}%`;
+  document.getElementById('sidebar-done-count').textContent = `${stats?.done || 0} concluídas`;
+  document.getElementById('sidebar-hours').textContent = `${stats?.hours_completed || 0}h`;
+}
 
-  const curWeek = getCurrentWeekNum();
-  document.getElementById('sidebar-week-value').textContent = `S${String(curWeek).padStart(2,'0')}`;
+function showLoading(message = 'Carregando...') {
+  document.getElementById('view-content').innerHTML =
+    `<div class="loading"><div class="spinner"></div>${escapeHtml(message)}</div>`;
+}
 
-  let phaseLabel = '';
-  for (const [ph, phData] of Object.entries(PHASES)) {
-    if (phData.weeks.includes(curWeek)) {
-      phaseLabel = `Fase ${ph}`;
-      break;
-    }
+function showError(error) {
+  document.getElementById('view-content').innerHTML = `
+    <div class="error-panel">
+      <strong>Não foi possível carregar esta seção.</strong>
+      <span>${escapeHtml(error.message)}</span>
+      <button class="btn btn-primary" onclick="refreshData()">TENTAR NOVAMENTE</button>
+    </div>`;
+}
+
+function statusBadge(status) {
+  return `<span class="status-pill status-${escapeHtml(status)}">${escapeHtml(STATUS_LABELS[status] || status)}</span>`;
+}
+
+function courseById(id) {
+  return State.courses.find(course => course.id === id);
+}
+
+function activityById(id) {
+  return State.activities.find(activity => activity.id === id);
+}
+
+function currentActivity() {
+  return State.activities.find(activity => activity.status === 'in_progress')
+    || State.today?.slots.map(slot => slot.activity && activityById(slot.activity.id)).find(Boolean)
+    || State.next;
+}
+
+function actionButton(label, action, cls = '') {
+  return `<button class="activity-action ${cls}" type="button" ${action}>${label}</button>`;
+}
+
+function activityActions(activity, compact = false) {
+  if (!activity) return '';
+  const id = escapeHtml(activity.id);
+  const buttons = [];
+  if (activity.current_slot_id && ['pending', 'deferred'].includes(activity.status)) {
+    buttons.push(actionButton('▶ Iniciar', `onclick="runAction('${id}','start')"`, 'primary'));
   }
-  document.getElementById('sidebar-week-phase').textContent = phaseLabel || 'Cronograma completo';
-
-  document.getElementById('sidebar-pct-value').innerHTML =
-    `${s.pct}<span class="sidebar-prog-pct-sym">%</span>`;
-  document.getElementById('sidebar-mini-fill').style.width = `${s.pct}%`;
-  document.getElementById('sidebar-done-count').textContent = `${s.done} concluídas`;
-  document.getElementById('sidebar-hours').textContent = `${s.hours_studied}h estudadas`;
+  if (activity.current_slot_id && !['done', 'skipped', 'cancelled'].includes(activity.status)) {
+    buttons.push(actionButton('✓ Concluir', `onclick="runAction('${id}','complete')"`, 'success'));
+    buttons.push(actionButton('✕ Não fiz', `onclick="runAction('${id}','defer','Não realizado')"`, 'danger'));
+    if (!compact) buttons.push(actionButton('↪ Adiar', `onclick="runAction('${id}','defer','Adiada pelo usuário')"`));
+  }
+  if (!['done', 'skipped', 'cancelled'].includes(activity.status)) {
+    buttons.push(actionButton('⊘ Bloquear', `onclick="runAction('${id}','block')"`));
+    if (!compact) buttons.push(actionButton('→ Pular', `onclick="runAction('${id}','skip')"`));
+  }
+  buttons.push(actionButton('＋ Nota', `onclick="openNote('${id}')"`));
+  return `<div class="activity-actions">${buttons.join('')}</div>`;
 }
 
-// ── Navigation ───────────────────────────────────────────────────────────────
-function setupNavListeners() {
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => navigateTo(item.dataset.view));
-  });
-}
-
-function navigateTo(view) {
-  State.currentView = view;
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.view === view);
-  });
-
-  const headers = {
-    dashboard:    { title: '⬡ Dashboard',       meta: 'Visão geral · escala 12x36 · Mai–Dez 2026' },
-    cronograma:   { title: '📅 Cronograma',      meta: '36 semanas · 5 fases · datas reais da escala' },
-    milestones:   { title: '✓ Milestones',       meta: 'Checkpoints por fase' },
-    conquistas:   { title: '🏅 Conquistas',      meta: 'Badges por curso e fase concluídos' },
-    zabbixlabs:   { title: '🧪 Labs Zabbix',     meta: '30 labs semanais · expertise em monitoramento' },
-    estatisticas: { title: '📊 Estatísticas',    meta: 'Horas, distribuição, progresso por fase' },
-    exportar:     { title: '📤 Exportar',         meta: 'Backup do seu progresso' },
-  };
-
-  const h = headers[view] || headers.dashboard;
-  document.getElementById('view-title').textContent = h.title;
-  document.getElementById('view-meta').textContent = h.meta;
-
-  const views = {
-    dashboard:    renderDashboard,
-    cronograma:   renderCronograma,
-    milestones:   renderMilestones,
-    conquistas:   renderConquistas,
-    zabbixlabs:   renderZabbixLabs,
-    estatisticas: renderEstatisticas,
-    exportar:     renderExportar,
-  };
-  (views[view] || renderDashboard)();
-}
-
-// ── Lesson card HTML ─────────────────────────────────────────────────────────
-function tagHtml(tag) {
-  if (!tag) return '';
-  const map = {
-    lab:    ['LAB',     'tag-lab'],
-    free:   ['FREE',    'tag-free'],
-    book:   ['LIVRO',   'tag-book'],
-    aws:    ['AWS',     'tag-aws'],
-    zabbix: ['🧪 ZABBIX', 'tag-zabbix'],  // v2.0
-    ia:     ['🤖 IA',    'tag-ia'],       // v2.1
-  };
-  const [label, cls] = map[tag] || [tag.toUpperCase(), ''];
-  return `<span class="lesson-tag ${cls}">${label}</span>`;
-}
-
-function blockBadgeHtml(block) {
-  const map = {
-    manha:  ['MANHÃ',   'block-manha'],
-    tarde:  ['TARDE',   'block-tarde'],
-    passivo:['PASSIVO', 'block-passivo'],
-  };
-  const [label, cls] = map[block] || [block.toUpperCase(), ''];
-  return `<span class="block-badge ${cls}">${label}</span>`;
-}
-
-function lessonCardHtml(lesson, lid, weekNum, date, idx) {
-  const progress = State.progress[lid];
-  const status = progress?.status || 'pending';
-  const note = progress?.note || '';
-  const cls = status === 'done' ? 'done' : status === 'skipped' ? 'skipped' : '';
-  const icon = status === 'done' ? '✓ ' : status === 'skipped' ? '✗ ' : '';
-  const dataTag = lesson.tag ? `data-tag="${lesson.tag}"` : '';
-
+function activityCard(activity, options = {}) {
+  if (!activity) return '<div class="empty-state">Nenhuma atividade disponível.</div>';
+  const course = courseById(activity.course_id);
+  const tags = (activity.tags || []).map(tag => `<span class="mini-tag">${escapeHtml(tag)}</span>`).join('');
   return `
-    <div class="lesson-card ${cls}" ${dataTag} onclick="openLessonModal(${weekNum},'${date}',${idx})">
-      <div class="lesson-name">${icon}${lesson.name}</div>
-      <div class="lesson-meta">
-        <span class="lesson-hours">${lesson.h}h</span>
-        ${blockBadgeHtml(lesson.block || 'manha')}
-        ${tagHtml(lesson.tag)}
+    <article class="dynamic-activity-card ${options.featured ? 'featured' : ''}">
+      <div class="activity-card-top">
+        <span class="sequence-code">#${String(activity.sequence).padStart(3, '0')}</span>
+        ${statusBadge(activity.status)}
       </div>
-      ${note ? `<div class="lesson-note-preview">// ${note}</div>` : ''}
-    </div>
-  `;
+      <h3>${escapeHtml(activity.name)}</h3>
+      <p class="activity-course">${escapeHtml(course?.name || activity.course_id)}</p>
+      <div class="activity-meta">
+        <span>${activity.duration_minutes} min</span>
+        <span>${escapeHtml(activity.activity_type)}</span>
+        ${tags}
+      </div>
+      ${activity.note ? `<div class="activity-note">// ${escapeHtml(activity.note)}</div>` : ''}
+      ${options.actions === false ? '' : activityActions(activity, options.compact)}
+    </article>`;
 }
 
-// ── VIEW: Dashboard ──────────────────────────────────────────────────────────
-function renderDashboard() {
+function slotCard(slot) {
+  const activity = slot.activity ? activityById(slot.activity.id) : null;
+  return `
+    <article class="dynamic-slot-card ${slot.status} ${activity ? 'occupied' : ''}">
+      <div class="slot-time">
+        <strong>${escapeHtml(slot.start_time)}</strong>
+        <span>${escapeHtml(slot.slot_code)}</span>
+      </div>
+      <div class="slot-content">
+        <div class="slot-heading">
+          <span>${escapeHtml(slot.slot_type)}</span>
+          ${statusBadge(slot.status)}
+        </div>
+        ${activity ? `
+          <h3>${escapeHtml(activity.name)}</h3>
+          <p>${escapeHtml(courseById(activity.course_id)?.name || activity.course_id)}</p>
+          ${activityActions(activity, true)}
+        ` : '<div class="slot-empty">Slot livre</div>'}
+      </div>
+    </article>`;
+}
+
+function renderToday() {
+  const activity = currentActivity();
+  const course = activity && courseById(activity.course_id);
+  const deferred = State.activities.filter(item => item.status === 'deferred');
+  const completedToday = State.today.slots.filter(slot => slot.status === 'completed').length;
+  const typeClass = State.today.day_type.toLowerCase();
+  document.getElementById('view-content').innerHTML = `
+    <section class="hero-day ${typeClass}">
+      <div>
+        <span class="eyebrow">${escapeHtml(formatDate(State.today.date, true))}</span>
+        <h2>${escapeHtml(State.today.day_type)}</h2>
+        <p>${State.today.day_type === 'FOLGA' ? 'Quatro blocos para avançar com calma.' : 'Dois blocos objetivos, preservando seu descanso.'}</p>
+      </div>
+      <div class="hero-day-score"><strong>${completedToday}/${State.today.slots.length}</strong><span>slots concluídos</span></div>
+    </section>
+
+    <div class="dashboard-grid">
+      <section class="panel panel-wide">
+        <div class="panel-title"><span>Agenda de hoje</span><small>${State.today.slots.length} blocos de 30 min</small></div>
+        <div class="slot-list">${State.today.slots.map(slotCard).join('')}</div>
+      </section>
+      <aside class="dashboard-side">
+        <section class="panel focus-panel">
+          <div class="panel-title"><span>Curso atual</span></div>
+          ${course ? `<div class="course-focus"><span>FASE ${course.phase}</span><h3>${escapeHtml(course.name)}</h3><p>${escapeHtml(course.provider)}</p><div class="inline-progress"><i style="width:${course.progress_pct}%"></i></div><small>${course.activities_done}/${course.activities_total} atividades</small></div>` : '<div class="empty-state">Curso ainda não definido.</div>'}
+        </section>
+        <section class="panel">
+          <div class="panel-title"><span>Próxima atividade</span></div>
+          ${activityCard(State.next, { actions: false, featured: true })}
+        </section>
+      </aside>
+    </div>
+
+    <section class="panel deferred-panel">
+      <div class="panel-title"><span>Atividades adiadas</span><small>${deferred.length} na fila</small></div>
+      ${deferred.length ? `<div class="compact-grid">${deferred.slice(0, 6).map(item => activityCard(item, { compact: true })).join('')}</div>` : '<div class="empty-state good">✓ Nenhuma atividade adiada neste momento.</div>'}
+    </section>`;
+}
+
+function renderQueue() {
+  const queue = State.activities.filter(item => ['in_progress', 'deferred', 'pending', 'blocked'].includes(item.status));
+  document.getElementById('view-content').innerHTML = `
+    <div class="filter-summary"><strong>${queue.length}</strong><span>atividades ativas, ordenadas por sequência</span></div>
+    <div class="activity-list">${queue.map(item => activityCard(item)).join('')}</div>`;
+}
+
+function renderCourses() {
+  document.getElementById('view-content').innerHTML = `<div class="course-grid">${State.courses.map(course => `
+    <article class="dynamic-course-card">
+      <div class="course-card-head"><span>FASE ${course.phase}</span>${statusBadge(course.status)}</div>
+      <h3>${escapeHtml(course.name)}</h3>
+      <p>${escapeHtml(course.provider)} · ${escapeHtml(course.execution)}</p>
+      <div class="inline-progress"><i style="width:${course.progress_pct}%"></i></div>
+      <div class="course-card-stats"><strong>${course.progress_pct}%</strong><span>${course.activities_done}/${course.activities_total} atividades</span></div>
+    </article>`).join('')}</div>`;
+}
+
+function renderRoadmap() {
+  document.getElementById('view-content').innerHTML = `<div class="roadmap-dynamic">${[1,2,3,4,5].map(phase => {
+    const courses = State.courses.filter(course => course.phase === phase);
+    const total = courses.reduce((sum, course) => sum + course.activities_total, 0);
+    const done = courses.reduce((sum, course) => sum + course.activities_done, 0);
+    const pct = total ? Math.round(done / total * 100) : 0;
+    return `<section class="roadmap-phase-card">
+      <div class="phase-marker">${phase}</div>
+      <div class="phase-body"><span>FASE ${phase}</span><h2>${escapeHtml(PHASE_NAMES[phase])}</h2><p>${courses.map(course => escapeHtml(course.name)).join(' · ')}</p><div class="inline-progress"><i style="width:${pct}%"></i></div><small>${done}/${total} atividades · ${pct}%</small></div>
+    </section>`;
+  }).join('')}</div>`;
+}
+
+function renderProjects() {
+  const projects = State.activities.filter(activity => activity.activity_type === 'project');
+  document.getElementById('view-content').innerHTML = `
+    <div class="filter-summary"><strong>${projects.length}</strong><span>entregas práticas para comprovar aprendizado</span></div>
+    <div class="activity-list">${projects.map(item => activityCard(item)).join('')}</div>`;
+}
+
+function renderTrack(courseId, emptyMessage) {
+  const course = courseById(courseId);
+  const activities = State.activities.filter(item => item.course_id === courseId);
+  document.getElementById('view-content').innerHTML = course ? `
+    <section class="track-hero">
+      <span>${escapeHtml(course.provider)}</span><h2>${escapeHtml(course.name)}</h2>
+      <p>${escapeHtml(course.notes || emptyMessage)}</p>
+      <div class="inline-progress"><i style="width:${course.progress_pct}%"></i></div>
+      <small>${course.activities_done}/${course.activities_total} atividades concluídas</small>
+    </section>
+    <div class="activity-list">${activities.map(item => activityCard(item)).join('')}</div>`
+    : `<div class="empty-state">${escapeHtml(emptyMessage)}</div>`;
+}
+
+async function renderHistory() {
+  State.history = await api('/api/history?limit=500');
+  const activityNames = Object.fromEntries(State.activities.map(item => [item.id, item.name]));
+  document.getElementById('view-content').innerHTML = State.history.length ? `
+    <div class="history-timeline">${State.history.map(event => `
+      <article class="history-event event-${escapeHtml(event.event_type)}">
+        <div class="history-dot"></div>
+        <div class="history-body">
+          <div><strong>${escapeHtml(activityNames[event.activity_id] || event.activity_id)}</strong>${statusBadge(event.event_type)}</div>
+          <p>${escapeHtml(event.note || `${event.from_status || '—'} → ${event.to_status || '—'}`)}</p>
+          <small>${formatDateTime(event.created_at)}${event.study_slot_id ? ` · ${escapeHtml(event.study_slot_id)}` : ''}</small>
+        </div>
+      </article>`).join('')}</div>` : '<div class="empty-state">O histórico será preenchido conforme você usar a agenda.</div>';
+}
+
+function renderStats() {
   const s = State.stats;
-  const curWeek = getCurrentWeekNum();
-  const todayInfo = getTodayInfo();
-  const today = todayISO();
-
-  // Cabeçalho de hoje
-  let todayHtml = '';
-  if (todayInfo) {
-    const { date, dateData, weekData } = todayInfo;
-    const typeLabel = getDayTypeLabel(dateData.type);
-    const typeCls = dateData.type === 'F' ? 'folga' : 'trabalho';
-    const hoursAvail = dateData.type === 'F' ? '4h' : '0.5h';
-    const dayName = getDayName(date);
-
-    // Contar lições do dia
-    const todayDone = dateData.lessons.filter((_, i) =>
-      State.progress[`${date}-${i}`]?.status === 'done'
-    ).length;
-    const todayTotal = dateData.lessons.length;
-
-    todayHtml = `
-      <div class="today-card ${typeCls}">
-        <div class="today-header">
-          <div class="today-date-block">
-            <span class="today-weekday">${dayName}</span>
-            <span class="today-date">${formatDate(date)}</span>
-          </div>
-          <div class="today-type-block">
-            <span class="today-type-badge ${typeCls}">${typeLabel}</span>
-            <span class="today-hours">${hoursAvail} disponíveis</span>
-          </div>
-          <div class="today-progress-block">
-            <span class="today-done">${todayDone}/${todayTotal}</span>
-            <span class="today-done-label">de hoje</span>
-          </div>
-        </div>
-        <div class="today-lessons">
-    `;
-
-    // Agrupar por bloco
-    const byBlock = { manha: [], tarde: [], passivo: [] };
-    dateData.lessons.forEach((lesson, i) => {
-      const block = lesson.block || (dateData.type === 'T' ? 'passivo' : 'manha');
-      (byBlock[block] = byBlock[block] || []).push({ lesson, i });
-    });
-
-    ['manha', 'tarde', 'passivo'].forEach(block => {
-      const items = byBlock[block] || [];
-      if (!items.length) return;
-      todayHtml += `<div class="today-block">
-        <div class="today-block-label">${blockLabel(block)}</div>`;
-      items.forEach(({ lesson, i }) => {
-        todayHtml += lessonCardHtml(lesson, `${date}-${i}`, todayInfo.weekNum, date, i);
-      });
-      todayHtml += `</div>`;
-    });
-
-    todayHtml += `</div></div>`;
-  } else {
-    todayHtml = `<div class="today-card"><div class="empty-state">Hoje (${formatDate(today)}) está fora do período Mai–Dez 2026</div></div>`;
-  }
-
-  let html = `
-    <div class="section-title">Hoje — ${todayISO() >= '2026-05-01' && todayISO() <= '2026-12-31' ? formatDate(today) + ' · ' + getDayName(today) : formatDate(today)}</div>
-    ${todayHtml}
-
-    <div class="stats-grid" style="margin-top:16px">
-      <div class="stat-card green">
-        <div class="val">${s.done}</div>
-        <div class="lbl">Concluídas</div>
-      </div>
-      <div class="stat-card">
-        <div class="val">${s.total}</div>
-        <div class="lbl">Total</div>
-      </div>
-      <div class="stat-card red">
-        <div class="val">${s.skipped}</div>
-        <div class="lbl">Puladas</div>
-      </div>
-      <div class="stat-card yellow">
-        <div class="val">${s.hours_studied}h</div>
-        <div class="lbl">Horas Estudadas</div>
-      </div>
-      <div class="stat-card blue">
-        <div class="val">${s.pct}%</div>
-        <div class="lbl">Progresso</div>
-      </div>
-    </div>
-
-    <div class="prog-container">
-      <div class="prog-label">
-        <span>PROGRESSO GERAL</span>
-        <span>${s.pct}%</span>
-      </div>
-      <div class="prog-track">
-        <div class="prog-fill" style="width:${s.pct}%"></div>
-      </div>
-    </div>
-
-    <div class="section-title">Progresso por Fase</div>
-    <div class="phase-grid">
-  `;
-
-  for (const ph of s.by_phase) {
-    html += `
-      <div class="phase-card">
-        <div class="phase-card-num">Fase ${ph.phase}</div>
-        <div class="phase-card-title">${ph.label.replace('Fase ' + ph.phase + ' — ', '')}</div>
-        <div class="phase-card-meta">
-          <span>${ph.done}/${ph.total} lições</span>
-          <span>${ph.pct}%</span>
-        </div>
-        <div class="phase-bar">
-          <div class="phase-fill" style="width:${ph.pct}%"></div>
-        </div>
-      </div>
-    `;
-  }
-  html += `</div>`;
-
-  // Semana atual (próximas folgas)
-  const curWeekData = WEEKS[curWeek];
-  if (curWeekData) {
-    html += `
-      <div class="section-title" style="margin-top:8px">Semana Atual — ${curWeekData.label}</div>
-      <div class="current-week-card">
-        <div class="current-week-header">
-          <div class="current-week-label">${curWeekData.label} — <span class="current-week-focus">${curWeekData.focus}</span></div>
-          <span class="current-week-badge">Em Andamento</span>
-        </div>
-        <div class="dates-grid">
-    `;
-
-    for (const [date, dateData] of Object.entries(curWeekData.dates)) {
-      const isToday = date === today;
-      const typeCls = dateData.type === 'F' ? 'folga' : 'trabalho';
-      const dayName = getDayName(date);
-
-      html += `
-        <div class="date-col ${typeCls} ${isToday ? 'today-col' : ''}">
-          <div class="date-col-header">
-            <span class="date-col-day">${dayName}</span>
-            <span class="date-col-num">${formatDate(date)}</span>
-            <span class="date-type-chip ${typeCls}">${getDayTypeLabel(dateData.type)}</span>
-          </div>
-          <div class="date-col-lessons">
-      `;
-
-      dateData.lessons.forEach((lesson, i) => {
-        html += lessonCardHtml(lesson, `${date}-${i}`, curWeek, date, i);
-      });
-
-      html += `</div></div>`;
-    }
-
-    html += `</div></div>`;
-  }
-
-  // Lições puladas
-  const skippedList = getSkippedLessons();
-  if (skippedList.length > 0) {
-    html += `<div class="section-title" style="margin-top:8px">Lições Puladas (${skippedList.length})</div>
-    <div class="skipped-list">`;
-
-    for (const item of skippedList.slice(0, 10)) {
-      html += `
-        <div class="skipped-item" onclick="openLessonModal(${item.weekNum},'${item.date}',${item.idx})">
-          <span class="skip-icon">✗</span>
-          <span class="skip-name">${item.lesson.name}</span>
-          <span class="skip-meta">${WEEKS[item.weekNum].label} · ${formatDate(item.date)}</span>
-        </div>
-      `;
-    }
-
-    if (skippedList.length > 10) {
-      html += `<div class="empty-state" style="padding:10px">...e mais ${skippedList.length - 10} lições</div>`;
-    }
-    html += `</div>`;
-  }
-
-  document.getElementById('view-content').innerHTML = html;
-}
-
-function getSkippedLessons() {
-  const result = [];
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
-    for (const [date, dateData] of Object.entries(wData.dates)) {
-      dateData.lessons.forEach((lesson, i) => {
-        const lid = `${date}-${i}`;
-        if (State.progress[lid]?.status === 'skipped') {
-          result.push({ weekNum: parseInt(wNum), date, idx: i, lesson });
-        }
-      });
-    }
-  }
-  return result;
-}
-
-// ── VIEW: Cronograma ─────────────────────────────────────────────────────────
-function renderCronograma() {
-  const today = todayISO();
-
-  let html = `
-    <div class="filter-bar">
-      <span class="filter-label">Fase:</span>
-      <button class="filter-btn ${State.phaseFilter === 'all' ? 'active' : ''}"
-        onclick="setPhaseFilter('all',this)">TODAS</button>
-  `;
-
-  for (const [ph, data] of Object.entries(PHASES)) {
-    html += `
-      <button class="filter-btn ${State.phaseFilter === ph ? 'active' : ''}"
-        onclick="setPhaseFilter('${ph}',this)">F${ph}</button>
-    `;
-  }
-  html += `</div>`;
-
-  for (const [ph, phData] of Object.entries(PHASES)) {
-    if (State.phaseFilter !== 'all' && State.phaseFilter !== ph) continue;
-
-    let phDone = 0, phTotal = 0;
-    for (const wNum of phData.weeks) {
-      const wData = WEEKS[wNum];
-      if (!wData) continue;
-      for (const [date, dateData] of Object.entries(wData.dates)) {
-        dateData.lessons.forEach((_, i) => {
-          phTotal++;
-          if (State.progress[`${date}-${i}`]?.status === 'done') phDone++;
-        });
-      }
-    }
-    const phPct = phTotal ? Math.round(phDone / phTotal * 100) : 0;
-
-    html += `
-      <div class="phase-block" id="phase-${ph}">
-        <div class="phase-header" onclick="togglePhase('phase-${ph}')">
-          <span class="phase-badge">Fase ${ph}</span>
-          <div style="flex:1">
-            <div class="phase-title">${phData.label}</div>
-            <div class="phase-sub">${phData.sub}</div>
-          </div>
-          <div class="phase-pct">
-            <span>${phDone}/${phTotal} &nbsp;${phPct}%</span>
-            <div class="phase-mini-bar">
-              <div class="phase-mini-fill" style="width:${phPct}%"></div>
-            </div>
-          </div>
-          <span class="phase-chevron">▾</span>
-        </div>
-        <div class="phase-body">
-    `;
-
-    for (const wNum of phData.weeks) {
-      const wData = WEEKS[wNum];
-      if (!wData) continue;
-
-      let wDone = 0, wTotal = 0;
-      for (const [date, dateData] of Object.entries(wData.dates)) {
-        dateData.lessons.forEach((_, i) => {
-          wTotal++;
-          if (State.progress[`${date}-${i}`]?.status === 'done') wDone++;
-        });
-      }
-
-      html += `
-        <div class="week-block" id="week-${wNum}">
-          <div class="week-header" onclick="toggleWeek('week-${wNum}')">
-            <span class="week-label">${wData.label}</span>
-            <span class="week-focus">${wData.focus}</span>
-            <span class="week-stats-label">${wDone}/${wTotal}</span>
-            <span class="week-chevron">▾</span>
-          </div>
-          <div class="week-body">
-            <div class="dates-grid">
-      `;
-
-      for (const [date, dateData] of Object.entries(wData.dates)) {
-        const isToday = date === today;
-        const typeCls = dateData.type === 'F' ? 'folga' : 'trabalho';
-        const dayName = getDayName(date);
-
-        html += `
-          <div class="date-col ${typeCls} ${isToday ? 'today-col' : ''}">
-            <div class="date-col-header">
-              <span class="date-col-day">${dayName}</span>
-              <span class="date-col-num">${formatDate(date)}</span>
-              <span class="date-type-chip ${typeCls}">${getDayTypeLabel(dateData.type)}</span>
-            </div>
-            <div class="date-col-lessons">
-        `;
-
-        dateData.lessons.forEach((lesson, i) => {
-          html += lessonCardHtml(lesson, `${date}-${i}`, wNum, date, i);
-        });
-
-        html += `</div></div>`;
-      }
-
-      html += `
-            </div>
-            <div class="week-note-row">
-              <label>Nota da semana</label>
-              <textarea class="week-note-input"
-                placeholder="Adicione uma nota sobre esta semana..."
-                data-week="${wNum}"
-                onblur="saveWeekNote(this)">${State.weekNotes[wNum] || ''}</textarea>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    html += `</div></div>`;
-  }
-
-  document.getElementById('view-content').innerHTML = html;
-  loadVisibleWeekNotes();
-}
-
-async function loadVisibleWeekNotes() {
-  const textareas = document.querySelectorAll('.week-note-input');
-  for (const ta of textareas) {
-    const wNum = parseInt(ta.dataset.week);
-    if (State.weekNotes[wNum] === undefined) await loadWeekNote(wNum);
-    ta.value = State.weekNotes[wNum] || '';
-  }
-}
-
-function setPhaseFilter(ph, btn) {
-  State.phaseFilter = ph;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderCronograma();
-}
-
-function togglePhase(id) {
-  document.getElementById(id)?.classList.toggle('collapsed');
-}
-
-function toggleWeek(id) {
-  document.getElementById(id)?.classList.toggle('collapsed');
-}
-
-async function saveWeekNote(textarea) {
-  const wNum = parseInt(textarea.dataset.week);
-  const note = textarea.value.trim();
-  if (State.weekNotes[wNum] === note) return;
-  State.weekNotes[wNum] = note;
-  try {
-    await apiPost(`/api/week/${wNum}/note`, { note });
-    showToast('✓ Nota salva');
-  } catch (e) {
-    showToast('Erro ao salvar nota', true);
-  }
-}
-
-// ── VIEW: Milestones ─────────────────────────────────────────────────────────
-function renderMilestones() {
-  const byPhase = {};
-  for (const m of State.milestones) {
-    if (!byPhase[m.phase_num]) byPhase[m.phase_num] = [];
-    byPhase[m.phase_num].push(m);
-  }
-
-  let html = '';
-  for (const [ph, phData] of Object.entries(PHASES)) {
-    const items = byPhase[ph] || [];
-    const allDone = items.length > 0 && items.every(m => m.done);
-
-    html += `
-      <div class="milestone-phase ${allDone ? 'all-done' : ''}" id="mph-${ph}">
-        <div class="milestone-phase-header">
-          <span class="phase-badge">Fase ${ph}</span>
-          <span class="milestone-phase-title">${phData.label}</span>
-          <span class="milestone-badge-done">✓ COMPLETA</span>
-        </div>
-        <div class="milestone-list">
-    `;
-
-    for (const m of items) {
-      html += `
-        <div class="milestone-item ${m.done ? 'done' : ''}"
-             id="mi-${m.id}"
-             onclick="toggleMilestone(${m.id})">
-          <div class="milestone-check">${m.done ? '✓' : ''}</div>
-          <div class="milestone-label">${m.label}</div>
-        </div>
-      `;
-    }
-
-    html += `</div></div>`;
-  }
-
-  document.getElementById('view-content').innerHTML = html;
-}
-
-async function toggleMilestone(id) {
-  const m = State.milestones.find(x => x.id === id);
-  if (!m) return;
-  m.done = !m.done;
-  try {
-    await apiPost(`/api/milestones/${id}`, { done: m.done });
-    renderMilestones();
-    showToast(m.done ? '✓ Milestone concluído!' : '○ Milestone desmarcado');
-  } catch (e) {
-    m.done = !m.done;
-    showToast('Erro ao salvar', true);
-  }
-}
-
-// ── VIEW: Estatísticas ───────────────────────────────────────────────────────
-function renderEstatisticas() {
-  const s = State.stats;
-  if (!s) return;
-
-  const tagHours = { lab: 0, free: 0, book: 0, aws: 0, aula: 0 };
-  for (const [, wData] of Object.entries(WEEKS)) {
-    for (const [date, dateData] of Object.entries(wData.dates)) {
-      dateData.lessons.forEach((lesson, i) => {
-        const lid = `${date}-${i}`;
-        if (State.progress[lid]?.status === 'done') {
-          const tag = lesson.tag || 'aula';
-          tagHours[tag] = (tagHours[tag] || 0) + lesson.h;
-        }
-      });
-    }
-  }
-
-  // Folgas com pelo menos 1 lição concluída
-  let folgasComEstudo = 0;
-  let trabalhoComPassivo = 0;
-  for (const [, wData] of Object.entries(WEEKS)) {
-    for (const [date, dateData] of Object.entries(wData.dates)) {
-      const hasDone = dateData.lessons.some((_, i) =>
-        State.progress[`${date}-${i}`]?.status === 'done'
-      );
-      if (hasDone) {
-        if (dateData.type === 'F') folgasComEstudo++;
-        else trabalhoComPassivo++;
-      }
-    }
-  }
-
-  let streak = 0;
-  for (const [, wData] of Object.entries(WEEKS)) {
-    let hasProgress = false;
-    for (const [date, dateData] of Object.entries(wData.dates)) {
-      if (dateData.lessons.some((_, i) => State.progress[`${date}-${i}`]?.status === 'done')) {
-        hasProgress = true; break;
-      }
-    }
-    if (hasProgress) streak++; else break;
-  }
-
-  let html = `
-    <div class="chart-container">
-      <div class="chart-title">Progresso por Fase</div>
-  `;
-
-  for (const ph of s.by_phase) {
-    html += `
-      <div class="bar-chart-row">
-        <div class="bar-chart-label">F${ph.phase}</div>
-        <div class="bar-chart-track">
-          <div class="bar-chart-fill" style="width:${ph.pct}%; min-width:${ph.pct > 0 ? '24px' : '0'}">
-            ${ph.pct > 5 ? `<span class="bar-chart-val">${ph.pct}%</span>` : ''}
-          </div>
-        </div>
-        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);min-width:60px">${ph.done}/${ph.total}</span>
-      </div>
-    `;
-  }
-
-  html += `</div>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px">
-      <div class="chart-container" style="margin:0">
-        <div class="chart-title">Streak</div>
-        <div style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--yellow)">${streak}</div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">semanas com progresso</div>
-      </div>
-      <div class="chart-container" style="margin:0">
-        <div class="chart-title">Taxa de Conclusão</div>
-        <div style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--green)">${s.pct}%</div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${s.done} de ${s.total} lições</div>
-      </div>
-      <div class="chart-container" style="margin:0">
-        <div class="chart-title">Horas Estudadas</div>
-        <div style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--blue)">${s.hours_studied}h</div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">de ~168h planejadas</div>
-      </div>
-      <div class="chart-container" style="margin:0">
-        <div class="chart-title">Dias de Folga</div>
-        <div style="font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--green)">${folgasComEstudo}</div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">com estudo realizado</div>
-      </div>
-    </div>
-
-    <div class="chart-container">
-      <div class="chart-title">Horas por Tipo de Conteúdo</div>
-      <table class="stats-table">
-        <thead><tr><th>Tipo</th><th>Tag</th><th>Horas Concluídas</th></tr></thead>
-        <tbody>
-          <tr><td>Aulas do Curso</td><td><span class="lesson-tag" style="background:rgba(255,255,255,0.05);color:var(--muted);border:1px solid var(--border)">AULA</span></td><td style="color:var(--text)">${tagHours.aula.toFixed(1)}h</td></tr>
-          <tr><td>Labs Práticos</td><td><span class="lesson-tag tag-lab">LAB</span></td><td style="color:var(--orange)">${tagHours.lab.toFixed(1)}h</td></tr>
-          <tr><td>Conteúdo Gratuito</td><td><span class="lesson-tag tag-free">FREE</span></td><td style="color:var(--blue)">${tagHours.free.toFixed(1)}h</td></tr>
-          <tr><td>Livros / Leitura</td><td><span class="lesson-tag tag-book">LIVRO</span></td><td style="color:var(--yellow)">${tagHours.book.toFixed(1)}h</td></tr>
-          <tr><td>AWS (Certificação)</td><td><span class="lesson-tag tag-aws">AWS</span></td><td style="color:var(--aws)">${tagHours.aws.toFixed(1)}h</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="chart-container">
-      <div class="chart-title">Distribuição por Fase</div>
-      <table class="stats-table">
-        <thead><tr><th>Fase</th><th>Concluídas</th><th>Puladas</th><th>Pendentes</th><th>Total</th></tr></thead>
-        <tbody>
-  `;
-
-  for (const ph of s.by_phase) {
-    let phSkipped = 0;
-    const phData = PHASES[ph.phase];
-    for (const wNum of phData.weeks) {
-      const wData = WEEKS[wNum];
-      if (!wData) continue;
-      for (const [date, dateData] of Object.entries(wData.dates)) {
-        dateData.lessons.forEach((_, i) => {
-          if (State.progress[`${date}-${i}`]?.status === 'skipped') phSkipped++;
-        });
-      }
-    }
-    const phPending = ph.total - ph.done - phSkipped;
-    html += `
-      <tr>
-        <td>F${ph.phase}</td>
-        <td style="color:var(--green)">${ph.done}</td>
-        <td style="color:var(--red)">${phSkipped}</td>
-        <td style="color:var(--muted)">${phPending}</td>
-        <td>${ph.total}</td>
-      </tr>
-    `;
-  }
-
-  html += `</tbody></table></div>`;
-  document.getElementById('view-content').innerHTML = html;
-}
-
-// ── VIEW: Exportar ───────────────────────────────────────────────────────────
-function renderExportar() {
-  const s = State.stats;
-  const html = `
-    <div class="export-section">
-      <div class="export-title">📦 Exportar JSON (Backup)</div>
-      <div class="export-desc">Exporta todo o progresso em JSON para backup ou migração.</div>
-      <div class="export-actions">
-        <button class="btn btn-primary" id="btn-export-json" onclick="exportJSON()">↓ BAIXAR JSON</button>
-      </div>
-      <div class="export-timestamp" id="json-ts"></div>
-    </div>
-
-    <div class="export-section">
-      <div class="export-title">📥 Restaurar JSON (Restore)</div>
-      <div class="export-desc">
-        Restaura o progresso a partir de um arquivo de backup JSON.<br>
-        <span style="color:var(--red);font-weight:700">ATENÇÃO: Substitui todos os dados atuais!</span>
-      </div>
-      <div class="export-actions">
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)">
-        <button class="btn" style="border-color:var(--red);color:var(--red)" onclick="document.getElementById('import-file').click()">↑ RESTAURAR BACKUP</button>
-      </div>
-    </div>
-
-    <div class="export-section">
-      <div class="export-title">📄 Exportar Relatório TXT</div>
-      <div class="export-desc">Gera um relatório legível com seu progresso atual.</div>
-      <div class="export-actions">
-        <button class="btn" id="btn-export-txt" onclick="exportTXT()">↓ BAIXAR TXT</button>
-      </div>
-      <div class="export-timestamp" id="txt-ts"></div>
-    </div>
-
-    <div class="export-section">
-      <div class="export-title">📊 Resumo Atual</div>
-      <div class="export-desc">
-        Progresso: <strong style="color:var(--green)">${s.done}/${s.total} lições</strong> (${s.pct}%)
-        &nbsp;·&nbsp; Horas: <strong style="color:var(--blue)">${s.hours_studied}h</strong>
-        &nbsp;·&nbsp; Puladas: <strong style="color:var(--red)">${s.skipped}</strong>
-      </div>
-    </div>
-  `;
-  document.getElementById('view-content').innerHTML = html;
-}
-
-async function exportJSON() {
-  try {
-    const btn = document.getElementById('btn-export-json');
-    btn.textContent = 'GERANDO...';
-    const data = await apiGet('/api/export');
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sre-tracker-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    document.getElementById('json-ts').textContent = `Último export: ${new Date().toLocaleString('pt-BR')}`;
-    btn.textContent = '↓ BAIXAR JSON';
-    showToast('↓ JSON exportado!');
-  } catch (e) {
-    showToast('Erro ao exportar', true);
-  }
-}
-
-async function importJSON(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!data.progress && !data.week_notes && !data.milestones) {
-        showToast('Formato de backup inválido', true);
-        input.value = '';
-        return;
-      }
-      if (!confirm('Tem certeza? Todos os dados atuais serão substituídos!')) {
-        input.value = '';
-        return;
-      }
-      const btn = document.getElementById('btn-import-json');
-      if (btn) { btn.textContent = 'RESTAURANDO...'; btn.disabled = true; }
-      await apiPost('/api/import', data);
-      showToast('✓ Backup restaurado!');
-      await loadProgress();
-      await loadStats();
-      await loadMilestones();
-      State.weekNotes = {};
-      renderSidebar();
-      navigateTo('dashboard');
-    } catch (err) {
-      console.error(err);
-      showToast('Erro ao restaurar backup', true);
-    } finally {
-      input.value = '';
-      const btn = document.getElementById('btn-import-json');
-      if (btn) { btn.textContent = '↑ RESTAURAR BACKUP'; btn.disabled = false; }
-    }
-  };
-  reader.readAsText(file);
-}
-
-function exportTXT() {
-  const s = State.stats;
-  const lines = [
-    'SRE TRACKER — ROBSON SANTIAGO',
-    `Exportado: ${new Date().toLocaleString('pt-BR')}`,
-    '',
-    `PROGRESSO: ${s.done}/${s.total} lições (${s.pct}%)`,
-    `Horas estudadas: ${s.hours_studied}h`,
-    `Lições puladas: ${s.skipped}`,
-    '',
-    '─'.repeat(60),
-    'PROGRESSO POR FASE:',
-    '',
+  const cards = [
+    ['Concluídas', s.done, 'green'], ['Em andamento', s.in_progress, 'blue'],
+    ['Adiadas', s.deferred, 'yellow'], ['Bloqueadas', s.blocked, 'red'],
+    ['Horas concluídas', `${s.hours_completed}h`, 'purple'], ['Taxa de execução', `${s.execution_rate_pct}%`, 'green'],
   ];
-
-  for (const ph of s.by_phase) {
-    lines.push(`  ${ph.label}: ${ph.done}/${ph.total} (${ph.pct}%)`);
-  }
-
-  lines.push('', '─'.repeat(60), 'LIÇÕES CONCLUÍDAS:', '');
-
-  for (const [, wData] of Object.entries(WEEKS)) {
-    for (const [date, dateData] of Object.entries(wData.dates)) {
-      dateData.lessons.forEach((lesson, i) => {
-        const lid = `${date}-${i}`;
-        const p = State.progress[lid];
-        if (p?.status === 'done') {
-          const note = p.note ? ` // ${p.note}` : '';
-          lines.push(`  ✓ [${wData.label}/${formatDate(date)}] ${lesson.name}${note}`);
-        }
-      });
-    }
-  }
-
-  lines.push('', '─'.repeat(60), 'LIÇÕES PULADAS:', '');
-  for (const [, wData] of Object.entries(WEEKS)) {
-    for (const [date, dateData] of Object.entries(wData.dates)) {
-      dateData.lessons.forEach((lesson, i) => {
-        const lid = `${date}-${i}`;
-        if (State.progress[lid]?.status === 'skipped') {
-          lines.push(`  ✗ [${wData.label}/${formatDate(date)}] ${lesson.name}`);
-        }
-      });
-    }
-  }
-
-  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `sre-tracker-${new Date().toISOString().split('T')[0]}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-  document.getElementById('txt-ts').textContent = `Último export: ${new Date().toLocaleString('pt-BR')}`;
-  showToast('↓ TXT exportado!');
+  document.getElementById('view-content').innerHTML = `
+    <div class="stats-grid dynamic-stats">${cards.map(([label, value, color]) => `<div class="stat-card ${color}"><div class="val">${escapeHtml(value)}</div><div class="lbl">${escapeHtml(label)}</div></div>`).join('')}</div>
+    <div class="dashboard-grid stats-layout">
+      <section class="panel"><div class="panel-title"><span>Progresso por fase</span></div>${s.by_phase.map(groupRow).join('')}</section>
+      <section class="panel"><div class="panel-title"><span>Progresso por curso</span></div>${s.by_course.filter(item => item.total > 0).map(groupRow).join('')}</section>
+    </div>`;
 }
 
-// ── Modal de Lição ───────────────────────────────────────────────────────────
-function openLessonModal(weekNum, date, idx) {
-  const wData = WEEKS[weekNum];
-  if (!wData) return;
-  const dateData = wData.dates[date];
-  if (!dateData) return;
-  const lesson = dateData.lessons[idx];
-  if (!lesson) return;
-
-  const lid = `${date}-${idx}`;
-  const progress = State.progress[lid] || { status: 'pending', note: '' };
-
-  State.currentLesson = { weekNum, date, idx, lid, lesson };
-
-  document.getElementById('m-title').textContent = lesson.name;
-
-  const typeLabel = getDayTypeLabel(dateData.type);
-  const typeCls = dateData.type === 'F' ? 'folga' : 'trabalho';
-  document.getElementById('m-sub').innerHTML = `
-    <span>${wData.label}</span>
-    <span>·</span>
-    <span>${formatDate(date)} ${getDayName(date)}</span>
-    <span>·</span>
-    <span class="m-type-badge ${typeCls}">${typeLabel}</span>
-    <span>·</span>
-    <span>${blockLabel(lesson.block || 'manha')}</span>
-    <span>·</span>
-    <span>${lesson.h}h</span>
-    ${tagHtml(lesson.tag)}
-  `;
-
-  // Marcar status atual
-  document.querySelectorAll('.status-opt').forEach(el => el.classList.remove('sel-done','sel-skipped','sel-pending'));
-  const selMap = { done: 'sel-done', skipped: 'sel-skipped', pending: 'sel-pending' };
-  const selEl = document.getElementById(`opt-${progress.status}`);
-  if (selEl) selEl.classList.add(selMap[progress.status] || 'sel-pending');
-
-  document.getElementById('m-note').value = progress.note || '';
-
-  State.selectedStatus = progress.status;
-  document.getElementById('m-modal').classList.add('open');
+function groupRow(group) {
+  return `<div class="progress-group"><div><strong>${escapeHtml(group.label)}</strong><span>${group.done}/${group.total}</span></div><div class="inline-progress"><i style="width:${group.pct}%"></i></div><small>${group.pct}% · ${Math.round(group.minutes_completed / 60 * 10) / 10}h concluídas</small></div>`;
 }
 
-function selectStatus(status) {
-  State.selectedStatus = status;
-  document.querySelectorAll('.status-opt').forEach(el => el.classList.remove('sel-done','sel-skipped','sel-pending'));
-  const selMap = { done: 'sel-done', skipped: 'sel-skipped', pending: 'sel-pending' };
-  const el = document.getElementById(`opt-${status}`);
-  if (el) el.classList.add(selMap[status] || '');
-}
-
-async function saveLesson() {
-  const { weekNum, date, idx, lid } = State.currentLesson;
-  const status = State.selectedStatus || 'pending';
-  const note = document.getElementById('m-note').value.trim();
-
-  const earnedBefore = status === 'done'
-    ? new Set(computeBadges().all.filter(b => b.earned).map(b => b.id))
-    : null;
-
+async function renderView() {
+  const [title, meta] = VIEW_META[State.view];
+  document.getElementById('view-title').textContent = title;
+  document.getElementById('view-meta').textContent = meta;
   try {
-    await apiPost(`/api/progress/${lid}`, { status, note });
-    State.progress[lid] = { status, note };
-
-    await loadStats();
-    renderSidebar();
-    closeModal();
-    showToast(status === 'done' ? '✓ Concluído!' : status === 'skipped' ? '✗ Marcado como pulado' : '○ Marcado como pendente');
-
-    if (earnedBefore) {
-      const newlyEarned = computeBadges().all.filter(b => b.earned && !earnedBefore.has(b.id));
-      if (newlyEarned.length > 0) setTimeout(() => showBadgeCelebration(newlyEarned[0]), 400);
-    }
-
-    if (State.currentView === 'dashboard') renderDashboard();
-    else if (State.currentView === 'cronograma') renderCronograma();
-    else if (State.currentView === 'zabbixlabs') renderZabbixLabs();
-    else if (State.currentView === 'conquistas') renderConquistas();
-  } catch (e) {
-    showToast('Erro ao salvar', true);
-  }
+    const renderers = {
+      today: renderToday, queue: renderQueue, courses: renderCourses,
+      roadmap: renderRoadmap, projects: renderProjects,
+      aws: () => renderTrack('aws-restart', 'A trilha AWS re/Start ainda não está disponível.'),
+      google: () => renderTrack('google-cloud-devops', 'A trilha Google Cloud ainda não está disponível.'),
+      history: renderHistory, stats: renderStats,
+    };
+    await renderers[State.view]();
+  } catch (error) { showError(error); }
 }
 
-function closeModal() {
-  document.getElementById('m-modal').classList.remove('open');
-  State.currentLesson = null;
+async function navigate(view) {
+  State.view = view;
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.view === view));
+  showLoading();
+  await renderView();
 }
 
-// ── Toast ────────────────────────────────────────────────────────────────────
-function showToast(msg, isError = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = isError ? 'error' : '';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+async function runAction(activityId, command, defaultNote = '') {
+  const destructive = ['skip', 'cancel'].includes(command);
+  if (destructive && !confirm('Confirma esta ação? A atividade sairá da fila ativa.')) return;
+  try {
+    await apiPost(`/api/activities/${activityId}/${command}`, { note: defaultNote });
+    showToast({ start: 'Atividade iniciada', complete: 'Atividade concluída', defer: 'Atividade realocada', block: 'Atividade bloqueada', skip: 'Atividade pulada', cancel: 'Atividade cancelada' }[command] || 'Atualizado');
+    await refreshData({ quiet: true });
+  } catch (error) { showToast(error.message, true); }
 }
 
-// ── VIEW: Labs Zabbix ────────────────────────────────────────────────────────
-function renderZabbixLabs() {
-  // Coletar todos os labs Zabbix do curriculo
-  const labs = [];
-  for (const [wNum, wData] of Object.entries(WEEKS)) {
-    for (const [date, dateData] of Object.entries(wData.dates)) {
-      dateData.lessons.forEach((lesson, i) => {
-        if (lesson.tag === 'zabbix') {
-          const lid = `${date}-${i}`;
-          const p = State.progress[lid] || { status: 'pending', note: '' };
-          labs.push({
-            weekNum: parseInt(wNum),
-            label: wData.label || `S${wNum}`,
-            date,
-            idx: i,
-            lesson,
-            lid,
-            status: p.status,
-          });
-        }
-      });
-    }
-  }
-
-  // Ordenar por semana
-  labs.sort((a, b) => a.weekNum - b.weekNum || a.date.localeCompare(b.date));
-
-  const total = labs.length;
-  const done  = labs.filter(l => l.status === 'done').length;
-  const pct   = total ? Math.round(done / total * 100) : 0;
-
-  let html = `
-    <div class="zabbix-header-card">
-      <div class="zabbix-icon-area">🧪</div>
-      <div class="zabbix-info">
-        <h2>Labs Zabbix — 30 Semanas</h2>
-        <p>1 lab por semana · expertise em monitoramento · diferencial de carreira</p>
-        <div class="zabbix-prog-bar" style="margin-top:10px">
-          <div class="zabbix-prog-fill" style="width:${pct}%"></div>
-        </div>
-      </div>
-      <div class="zabbix-pct-block">
-        <div class="zabbix-pct-num">${pct}%</div>
-        <div class="zabbix-pct-label">${done}/${total} labs</div>
-      </div>
-    </div>
-
-    <div class="zabbix-stats-row">
-      <div class="zabbix-stat"><div class="val">${total}</div><div class="lbl">Total Labs</div></div>
-      <div class="zabbix-stat"><div class="val" style="color:var(--green)">${done}</div><div class="lbl">Concluídos</div></div>
-      <div class="zabbix-stat"><div class="val" style="color:var(--muted)">${total - done}</div><div class="lbl">Pendentes</div></div>
-      <div class="zabbix-stat"><div class="val">${pct}%</div><div class="lbl">Progresso</div></div>
-    </div>
-
-    <div class="section-title">Lista de Labs — S05 a S34</div>
-    <div class="zabbix-lab-list">
-  `;
-
-  labs.forEach((item, idx) => {
-    const labNum = String(idx + 1).padStart(2, '0');
-    const statusIcon = item.status === 'done' ? '✓' : item.status === 'skipped' ? '✗' : '○';
-    html += `
-      <div class="zabbix-lab-item ${item.status}"
-           onclick="openLessonModal(${item.weekNum},'${item.date}',${item.idx})">
-        <div class="zabbix-lab-num">#${labNum}</div>
-        <div class="zabbix-lab-week">${item.label}</div>
-        <div class="zabbix-lab-name">${item.lesson.name.replace('🧪 ', '')}</div>
-        <div class="zabbix-lab-status">${statusIcon}</div>
-      </div>
-    `;
-  });
-
-  html += `</div>`;
-  document.getElementById('view-content').innerHTML = html;
+function openNote(activityId) {
+  const activity = activityById(activityId);
+  State.noteActivityId = activityId;
+  document.getElementById('note-activity-name').textContent = activity?.name || activityId;
+  document.getElementById('note-text').value = activity?.note || '';
+  document.getElementById('note-modal').classList.add('open');
+  document.getElementById('note-text').focus();
 }
 
-// ── VIEW: Conquistas ─────────────────────────────────────────────────────────
-function computeBadges() {
-  const PHASE_EMOJIS  = ['🌱', '⚙️', '☁️', '🚀', '🏆'];
-  const PHASE_COLORS  = ['#00e5a0', '#5b8dee', '#FF9900', '#9b78e8', '#00d4ff'];
-
-  const courseBadges = COURSE_BADGE_DEFS.map(def => {
-    const matches = [];
-    for (const [, wData] of Object.entries(WEEKS)) {
-      for (const [date, dateData] of Object.entries(wData.dates)) {
-        dateData.lessons.forEach((lesson, i) => {
-          const hit = def.tag
-            ? lesson.tag === def.tag
-            : (def.kw || []).some(kw => lesson.name.startsWith(kw));
-          if (hit) {
-            const lid = `${date}-${i}`;
-            matches.push({ lid, status: State.progress[lid]?.status || 'pending' });
-          }
-        });
-      }
-    }
-    const total = matches.length;
-    const done  = matches.filter(m => m.status === 'done').length;
-    return { ...def, total, done, earned: total > 0 && done === total, type: 'course' };
-  }).filter(b => b.total > 0);
-
-  const phaseBadges = (State.stats?.by_phase || []).map(ph => ({
-    id: `phase-${ph.phase}`,
-    name: ph.label.replace(`Fase ${ph.phase} — `, ''),
-    emoji: PHASE_EMOJIS[ph.phase - 1],
-    color: PHASE_COLORS[ph.phase - 1],
-    done: ph.done, total: ph.total, pct: ph.pct,
-    earned: ph.pct === 100,
-    type: 'phase', phase: ph.phase,
-  }));
-
-  const s = State.stats || {};
-  const masterBadge = {
-    id: 'sre-master', name: 'SRE Master', emoji: '⭐', color: '#ffab40',
-    done: s.done || 0, total: s.total || 0, pct: s.pct || 0,
-    earned: (s.pct || 0) === 100, type: 'special',
-  };
-
-  return { courseBadges, phaseBadges, masterBadge, all: [...phaseBadges, ...courseBadges, masterBadge] };
+function closeNote() {
+  document.getElementById('note-modal').classList.remove('open');
+  State.noteActivityId = null;
 }
 
-function badgeCardHtml(b, sub) {
-  const earned = b.earned;
-  const borderStyle = earned ? `border-color:${b.color}55;box-shadow:0 0 14px ${b.color}22;` : '';
-  const bgStyle     = earned ? `background:linear-gradient(135deg,${b.color}0a 0%,transparent 100%);` : '';
-  const nameColor   = earned ? `color:${b.color}` : 'color:var(--muted2)';
-  const statusColor = earned ? `color:${b.color};background:${b.color}15` : 'color:var(--muted2)';
-  return `
-    <div class="badge-card ${earned ? 'earned' : 'locked'}" style="${borderStyle}${bgStyle}">
-      <div class="badge-emoji">${b.emoji}</div>
-      <div class="badge-name" style="${nameColor}">${b.name}</div>
-      <div class="badge-sub">${sub}</div>
-      <div class="badge-status" style="${statusColor}">${earned ? '✓ CONQUISTADO' : '🔒 BLOQUEADO'}</div>
-    </div>`;
+async function saveNote() {
+  if (!State.noteActivityId) return;
+  const note = document.getElementById('note-text').value.trim();
+  try {
+    await apiPost(`/api/activities/${State.noteActivityId}/note`, { note });
+    closeNote();
+    showToast('Nota salva');
+    await refreshData({ quiet: true });
+  } catch (error) { showToast(error.message, true); }
 }
 
-function renderConquistas() {
-  const { courseBadges, phaseBadges, masterBadge, all } = computeBadges();
-  const earned = all.filter(b => b.earned).length;
-  const total  = all.length;
-  const pct    = total ? Math.round(earned / total * 100) : 0;
-
-  let html = `
-    <div class="badges-summary">
-      <div class="badges-summary-num">${earned}<span>/${total}</span></div>
-      <div class="badges-summary-label">badges conquistados</div>
-      <div class="badges-prog-bar">
-        <div class="badges-prog-fill" style="width:${pct}%"></div>
-      </div>
-    </div>
-
-    <div class="section-title">Fases Concluídas</div>
-    <div class="badges-grid">
-      ${phaseBadges.map(b => badgeCardHtml(b, `Fase ${b.phase} · ${b.pct}% · ${b.done}/${b.total} lições`)).join('')}
-    </div>
-
-    <div class="section-title">Cursos Concluídos</div>
-    <div class="badges-grid">
-      ${courseBadges.map(b => badgeCardHtml(b, `${b.done}/${b.total} lições`)).join('')}
-    </div>
-
-    <div class="section-title">Badge Especial</div>
-    <div class="badges-grid">
-      ${badgeCardHtml(masterBadge, `${masterBadge.done}/${masterBadge.total} lições totais`)}
-    </div>`;
-
-  document.getElementById('view-content').innerHTML = html;
+function showToast(message, error = false) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = error ? 'error show' : 'show';
+  setTimeout(() => toast.classList.remove('show'), 2800);
 }
 
-function showBadgeCelebration(badge) {
-  const el = document.createElement('div');
-  el.className = 'badge-celebration';
-  el.innerHTML = `
-    <div class="badge-celebration-inner" style="border-color:${badge.color}55">
-      <div class="badge-celebration-sparkles">✨ ✨ ✨</div>
-      <div class="badge-celebration-emoji">${badge.emoji}</div>
-      <div class="badge-celebration-title">Badge Conquistado!</div>
-      <div class="badge-celebration-name" style="color:${badge.color}">${badge.name}</div>
-      <div class="badge-celebration-sub">Continue assim! 🚀</div>
-      <button class="btn btn-primary" onclick="this.closest('.badge-celebration').remove()">INCRÍVEL!</button>
-    </div>`;
-  document.body.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('open'));
-  setTimeout(() => {
-    el.classList.remove('open');
-    setTimeout(() => el.remove(), 400);
-  }, 5000);
+function bindEvents() {
+  document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => navigate(item.dataset.view)));
+  document.getElementById('refresh-button').addEventListener('click', () => refreshData());
+  document.getElementById('note-cancel').addEventListener('click', closeNote);
+  document.getElementById('note-save').addEventListener('click', saveNote);
+  document.getElementById('note-modal').addEventListener('click', event => { if (event.target.id === 'note-modal') closeNote(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeNote(); });
 }
 
-// ── Start ────────────────────────────────────────────────────────────────────
+async function init() {
+  bindEvents();
+  try { await refreshData(); }
+  catch (error) { showError(error); }
+}
+
+window.runAction = runAction;
+window.openNote = openNote;
+window.refreshData = refreshData;
 document.addEventListener('DOMContentLoaded', init);

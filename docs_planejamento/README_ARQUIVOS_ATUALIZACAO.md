@@ -1,5 +1,8 @@
 # 📦 Arquivos para Atualizar Painel SRE
 
+> **DOCUMENTO HISTÓRICO:** este pacote descreve a arquitetura anterior de semanas.
+> Não apague o SQLite nem reaplique estas instruções no sistema atual.
+
 Você tem aqui **tudo** que precisa para atualizar seu repositório painel-estudos-sre de 31 para 36 semanas.
 
 ---

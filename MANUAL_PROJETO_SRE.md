@@ -1,86 +1,651 @@
-# Manual do Projeto: Transição de Carreira (NOC Sênior → SRE)
+# Manual do Projeto: Transição para SRE/DevOps
 
-Este documento serve como o manual definitivo do projeto de transição de carreira, detalhando a origem, os objetivos, a metodologia de estudo e o plano de ação construído para levar um profissional de NOC Sênior ao cargo de Site Reliability Engineer (SRE).
-
----
-
-## 1. O Objetivo: Por que este projeto nasceu?
-
-A área de tecnologia evolui rapidamente, e as operações tradicionais de TI estão sendo substituídas por práticas de Engenharia de Confiabilidade de Sites (SRE) e DevOps. 
-O objetivo primário deste projeto é pavimentar um caminho estruturado, realista e altamente prático para a **transição de carreira de NOC Sênior para SRE**.
-
-Como NOC Sênior, já existe uma bagagem enorme em monitoramento, resposta a incidentes, troubleshooting básico e vivência de produção. A transição para SRE não é sobre descartar esse conhecimento, mas sim **evoluí-lo através da automação, infraestrutura como código (IaC), nuvem e cultura de observabilidade avançada**.
+**Responsável:** Robson Santiago de Oliveira  
+**Objetivo profissional:** conquistar uma oportunidade remota como SRE ou DevOps  
+**Escala de trabalho:** 12x36  
+**Data-base da escala:** 05/08/2026 = FOLGA  
+**Versão:** 3.0 — cronograma dinâmico e sustentável
 
 ---
 
-## 2. A Metodologia de Construção do Roadmap
+## Estado atual da aplicação
 
-Para garantir que o plano fosse à prova de falhas, ele foi construído com base em três pilares principais:
+A migração para a agenda dinâmica está implementada. A aplicação atualmente possui:
 
-### A. O "SRE Roadmap for Beginners" (Medium)
-Como guia mestre, utilizamos o amplamente reconhecido "SRE Roadmap for Beginners", garantindo que as **15 Hard Skills fundamentais** exigidas pelo mercado de SRE fossem cobertas. Desde Linux e Networking até Kubernetes, CI/CD e Incident Management.
+- catálogo persistido de cursos e atividades originado em `data/curriculum.py`;
+- IDs permanentes de atividades, sem datas embutidas;
+- cálculo da escala 12x36 e geração idempotente de slots;
+- alocação por sequência e pré-requisitos;
+- reagendamento com histórico para atividades não realizadas ou adiadas;
+- API de agenda, cursos, atividades, progresso, histórico e estatísticas;
+- frontend diário integrado à nova API;
+- exportação compatível com dados legados sempre que possível.
 
-### B. Aproveitamento de Cursos Existentes + Indicações da IA
-O currículo foi montado fazendo um "inventário" dos excelentes cursos que você já possuía (como os da Udemy e LinuxTips). Onde o roadmap do Medium exigia habilidades que não estavam cobertas pelos cursos iniciais, a IA sugeriu cursos complementares e materiais gratuitos de altíssima qualidade (como Kubernetes, Ansible, GitHub Actions e o Google SRE Book).
-
-### C. A Adaptação à Realidade (A Escala 12x36)
-A maior causa de desistência em planos de estudo é a falta de adequação à rotina do profissional. Este roadmap foi **matematicamente moldado para a sua escala 12x36**:
-- **Dias de Folga (Ímpares/Pares alternados):** Considerados como "Dias Úteis" de estudo profundo (4 horas/dia). Nesses dias ocorrem os laboratórios densos, aulas práticas e simulados.
-- **Dias de Plantão:** Estudo passivo de 30 minutos (podcasts, leitura de documentação) para manter o cérebro aquecido sem gerar burnout.
-
----
-
-## 3. O Diferencial: 30 Semanas de Labs Zabbix
-
-SREs juniores no mercado muitas vezes são teóricos. Para garantir que seu perfil se destaque nos processos seletivos, o projeto incorpora a sua especialidade atual (Zabbix) e a eleva ao nível de Engenharia.
-Foi criado um cronograma paralelo de **30 Labs Práticos de Zabbix (1 por semana)**. Em vez de apenas instalar o Zabbix, os labs focam em integra-lo com o ecossistema SRE:
-- Integração do Zabbix com AWS via automação.
-- Zabbix + Ansible para auto-remediação.
-- Monitoramento de clusters Kubernetes.
-- Criação de pipelines CI/CD que disparam webhooks para alertas no Zabbix.
-
-Isso constrói um **portfolio prático** fortíssimo e mostra que você consegue integrar ferramentas legadas/enterprise com tecnologias Cloud Native.
+`WEEKS` não participa da nova agenda e existe somente como compatibilidade temporária.
 
 ---
 
-## 4. O Caminho: As 5 Fases da Transição
+## 1. Por que este projeto existe
 
-O roadmap de 36 semanas (Junho 2026 a Janeiro 2027) está estruturado para evoluir a sua "bagagem" técnica progressivamente, sem pular etapas fundamentais.
+Este projeto foi criado para orientar a transição de um profissional de monitoramento e operações para uma função de Site Reliability Engineering ou DevOps.
 
-### Fase 1: Foundation (Fundamentos) — Semanas 01 a 04
-O mercado não contrata um SRE que não domina a base. Esta fase foca na cultura (SRE Mindset), administração de sistemas Linux e fundamentos de redes TCP/IP.
-- **O que você ganha:** Confiança absoluta na linha de comando, entendimento sobre como as requisições fluem na rede e a mentalidade de tratar infraestrutura como software.
+A experiência atual não deve ser descartada. Conhecimentos em Zabbix, Grafana, disponibilidade, incidentes, troubleshooting, SLA, SLI, SLO e automação constituem uma base relevante.
 
-### Fase 2: Core Skills (Habilidades Centrais) — Semanas 05 a 08
-O momento de deixar de ser apenas um operador e começar a ser um desenvolvedor de infraestrutura.
-- **O que você ganha:** Habilidade de versionar código (Git/GitHub), escrever scripts eficientes para automação (Python) e entender a base de dados (SQL). Aqui nasce a capacidade de criar pipelines de dados e integrações via API.
+A transição consiste em ampliar essa base com:
 
-### Fase 3: Infra & Cloud (Nuvem e IaC) — Semanas 09 a 18
-A transição definitiva para o mundo moderno de operações. Todo o foco é em Cloud e Infraestrutura como Código.
-- **O que você ganha:** Proficiência na AWS (com objetivo de tirar a certificação SAA-C03), e a capacidade de não clicar mais em interfaces web, provisionando e configurando servidores usando **Terraform e Ansible (AWX)** de ponta a ponta.
+- Linux e redes;
+- Git e programação;
+- containers;
+- cloud;
+- Infrastructure as Code;
+- CI/CD;
+- Kubernetes;
+- observabilidade;
+- práticas formais de confiabilidade;
+- projetos de portfólio.
 
-### Fase 4: Advanced SRE (SRE Avançado) — Semanas 19 a 29
-A fase mais complexa e que consolida o cargo de SRE.
-- **O que você ganha:** Orquestração de containers (Kubernetes/Docker), automação completa de pipelines de entrega (GitHub Actions), e cultura real de Observabilidade (Integração do seu Zabbix com Prometheus e Grafana, gestão de Error Budgets e SLOs).
-
-### Fase 5: Especialização & Capstone — Semanas 30 a 36
-A fase final não é sobre aprender novas ferramentas, mas sobre **vender o seu perfil para o mercado**.
-- **O que você ganha:** Construção de um "Capstone Project" (um projeto final de grande escala unindo tudo o que aprendeu), preparação de currículo/portfolio e o início da preparação para uma certificação avançada como a CKA (Certified Kubernetes Administrator).
+O objetivo não é dominar todas as ferramentas existentes. O objetivo é demonstrar capacidade de compreender um serviço, automatizar sua infraestrutura, implantá-lo, observá-lo e responder adequadamente quando ele falhar.
 
 ---
 
-## 5. O Painel SRE Tracker (Ferramental)
+## 2. Objetivo profissional
 
-Para garantir que a consistência não se perdesse, foi desenvolvido localmente o **Painel Estudos SRE (v2.0)** em Python/FastAPI.
-Ele não é apenas uma tabela do Excel; é um sistema dinâmico que:
-- Mapeia exatamente as horas de cada dia baseado na sua escala real.
-- Calcula a porcentagem de conclusão de cada fase e do programa global.
-- Possui uma aba dedicada ao seu Diferencial de Zabbix (Labs).
-- Mostra exatamente os dias restantes até o objetivo final, gerando a "gamificação" necessária para manter a disciplina nos dias difíceis.
+O projeto busca preparar Robson para concorrer a vagas de:
 
-## 6. O Resultado Esperado (Janeiro de 2027)
+- Site Reliability Engineer;
+- DevOps Engineer;
+- Cloud Operations Engineer;
+- Platform Engineer em nível inicial ou intermediário;
+- Analista de Infraestrutura com foco em automação e cloud;
+- Analista de Observabilidade.
 
-Ao concluir as 36 semanas, a sua "bagagem" será drasticamente diferente:
-Você deixará de ser o profissional que reage a alertas no dashboard (NOC) para se tornar o Engenheiro que **constrói o dashboard, automatiza a resolução do alerta, provisiona a infraestrutura em nuvem via código e implementa as pipelines de CI/CD para as equipes de desenvolvimento**.
+O alvo principal é uma oportunidade:
 
-Esse é o exato perfil do **Site Reliability Engineer (SRE)** exigido hoje por empresas de ponta. O projeto te dará o embasamento teórico, a experiência prática via labs e o portfólio necessário para passar por entrevistas técnicas e cenários de arquitetura sem nenhuma dificuldade.
+- remota;
+- em horário comercial;
+- com menor desgaste de deslocamento;
+- compatível com maior convivência familiar;
+- com possibilidade de evolução técnica.
+
+A formação deve ser sólida, mas não depende de um prazo final rígido.
+
+---
+
+## 3. Princípios do projeto
+
+### 3.1 Sustentabilidade
+
+O plano não deve comprometer:
+
+- sono;
+- saúde;
+- vida espiritual;
+- relacionamento com esposa e filhas;
+- responsabilidades domésticas;
+- trabalho atual.
+
+Estudar até tarde para compensar um dia difícil não é considerado disciplina. É considerado risco de interrupção futura.
+
+### 3.2 Consistência acima de velocidade
+
+Metas mínimas:
+
+- **dia de folga:** 2 horas;
+- **dia de trabalho:** 1 hora.
+
+O progresso será medido por:
+
+- blocos concluídos;
+- competências adquiridas;
+- laboratórios realizados;
+- projetos entregues;
+- revisões concluídas.
+
+Não será medido apenas por horas de vídeo.
+
+### 3.3 Uma trilha principal por vez
+
+O aluno deverá manter no máximo:
+
+1. um curso principal do roadmap;
+2. uma trilha paralela obrigatória, quando aplicável:
+   - AWS re/Start;
+   - Canvas;
+   - Google Cloud Skills.
+
+Não iniciar vários cursos técnicos principais simultaneamente.
+
+### 3.4 Aprender fazendo
+
+Cada fase deve resultar em artefatos concretos:
+
+- scripts;
+- código;
+- pipelines;
+- dashboards;
+- infraestrutura;
+- documentação;
+- runbooks;
+- post-mortems;
+- repositórios públicos.
+
+---
+
+## 4. Base técnica do roadmap
+
+O roadmap foi construído a partir da combinação de:
+
+- SRE Roadmap for Beginners;
+- SRE Practical Roadmap 2026;
+- experiência prática já existente;
+- cursos disponíveis;
+- Google SRE Book;
+- Site Reliability Workbook;
+- exigências comuns em vagas de SRE e DevOps.
+
+O primeiro roadmap fornece a base progressiva. O segundo adiciona tecnologias atuais, como Terraform, GitOps e maior foco em entrevistas.
+
+A trilha combinada prioriza:
+
+```text
+Linux e redes
+→ Git, SQL e Python
+→ Docker
+→ cloud
+→ Terraform e Ansible
+→ CI/CD
+→ Kubernetes
+→ observabilidade
+→ SLO e incidentes
+→ especializações
+```
+
+---
+
+## 5. Escala 12x36
+
+A escala deve ser calculada pela sequência real de dias corridos.
+
+### Data-base
+
+- 05/08/2026: FOLGA
+- 06/08/2026: TRABALHO
+- 07/08/2026: FOLGA
+- 08/08/2026: TRABALHO
+
+Implementação recomendada:
+
+```python
+from datetime import date
+
+SCALE_ANCHOR = date(2026, 8, 5)
+
+def get_day_type(current_date: date) -> str:
+    days = (current_date - SCALE_ANCHOR).days
+    return "FOLGA" if days % 2 == 0 else "TRABALHO"
+```
+
+Não utilizar regras mensais baseadas em dias pares ou ímpares.
+
+---
+
+## 6. Rotina de estudo
+
+### 6.1 Dia de folga
+
+Carga mínima: 2 horas, divididas em quatro blocos de 30 minutos.
+
+| Bloco | Horário sugerido | Uso |
+|---|---|---|
+| F1 | 13h30–14h00 | conteúdo teórico |
+| F2 | 14h10–14h40 | exercício ou continuação |
+| F3 | 15h20–15h50 | laboratório |
+| F4 | 16h00–16h30 | laboratório, revisão ou AWS |
+
+O intervalo de espera próximo à escola pode ser usado para:
+
+- flashcards;
+- leitura de documentação;
+- revisão de comandos;
+- anotações;
+- questões.
+
+Esse intervalo é opcional e não entra na carga mínima.
+
+### 6.2 Dia de trabalho
+
+Carga mínima: 1 hora.
+
+| Bloco | Horário sugerido | Uso |
+|---|---|---|
+| T1 | 7h00–7h30 | curso principal |
+| T2 | intervalo de almoço | revisão, leitura ou AWS |
+
+O período da tarde é imprevisível e não deve ser considerado no planejamento obrigatório.
+
+O período noturno deve priorizar:
+
+- AWS re/Start, quando houver aula;
+- organização do dia seguinte;
+- leitura;
+- sono.
+
+### 6.3 Regra de sono
+
+Nos dias de trabalho, a meta é dormir entre 21h15 e 21h30 sempre que possível.
+
+Estudos não concluídos não devem ser compensados reduzindo o sono.
+
+---
+
+## 7. Funcionamento dinâmico do cronograma
+
+O cronograma não terá datas definitivas para cada aula.
+
+A aplicação manterá:
+
+- uma fila ordenada de atividades;
+- uma agenda de slots disponíveis;
+- histórico de execução;
+- reagendamentos;
+- progresso por competência.
+
+### Estados das atividades
+
+| Estado | Significado |
+|---|---|
+| `pending` | ainda não iniciada |
+| `in_progress` | iniciada |
+| `done` | concluída |
+| `deferred` | não realizada e devolvida à fila |
+| `blocked` | depende de recurso ou pré-requisito |
+| `skipped` | retirada conscientemente |
+| `cancelled` | removida definitivamente |
+
+### Regra de “não feito”
+
+Quando uma atividade for marcada como não feita:
+
+1. o slot original é registrado no histórico;
+2. a atividade recebe status `deferred`;
+3. ela volta para a fila;
+4. ocupa o próximo slot compatível;
+5. as atividades concluídas permanecem intactas;
+6. o sistema não desloca manualmente todo o calendário.
+
+A atividade deverá possuir ID permanente, sem data:
+
+```text
+linux-admin-sec03-lesson01
+python-devops-project-alert-router
+terraform-module-state-backend
+```
+
+---
+
+## 8. Fases da transição
+
+## Fase 1 — Fundamentos operacionais
+
+Competências:
+
+- Linux;
+- redes;
+- Git;
+- SQL;
+- Python.
+
+Resultados esperados:
+
+- administrar uma VM Linux;
+- diagnosticar conectividade;
+- manipular logs;
+- criar scripts;
+- versionar código;
+- consultar banco de dados;
+- consumir APIs.
+
+Projeto principal:
+
+```text
+linux-sre-toolkit
+```
+
+---
+
+## Fase 2 — Containers, cloud e IaC
+
+Competências:
+
+- Docker;
+- AWS;
+- Terraform;
+- Ansible.
+
+Resultados esperados:
+
+- containerizar aplicações;
+- compreender arquitetura AWS;
+- provisionar infraestrutura como código;
+- configurar servidores automaticamente;
+- controlar custos e permissões.
+
+Projetos:
+
+```text
+terraform-aws-lab
+ansible-sre-lab
+```
+
+---
+
+## Fase 3 — CI/CD e Kubernetes
+
+Competências:
+
+- GitHub Actions;
+- Kubernetes;
+- Helm;
+- segurança de pipelines;
+- deployment.
+
+Resultados esperados:
+
+- criar pipelines;
+- executar testes;
+- construir imagens;
+- implantar aplicações;
+- trabalhar com workloads Kubernetes;
+- configurar probes, recursos, volumes e RBAC.
+
+Projeto principal:
+
+```text
+Flask API — código ao deploy
+```
+
+---
+
+## Fase 4 — Observabilidade e SRE
+
+Competências:
+
+- Prometheus;
+- Grafana;
+- Loki;
+- Tempo ou Jaeger;
+- OpenTelemetry;
+- SLI;
+- SLO;
+- error budget;
+- alertas;
+- incident response;
+- post-mortems.
+
+Resultados esperados:
+
+- instrumentar aplicação;
+- criar métricas RED;
+- correlacionar telemetria;
+- definir SLO;
+- criar alertas acionáveis;
+- escrever runbook;
+- conduzir incidente simulado.
+
+Projeto principal:
+
+```text
+prometheus-sre-lab
+```
+
+---
+
+## Fase 5 — Especialização e carreira
+
+Conteúdos:
+
+- Zabbix avançado;
+- AWX;
+- Google Cloud DevOps;
+- DevOps agêntico;
+- portfólio;
+- currículo;
+- entrevistas.
+
+Resultados esperados:
+
+- integrar Zabbix com automação;
+- centralizar playbooks;
+- criar projetos documentados;
+- apresentar incidentes em entrevistas;
+- demonstrar decisões técnicas.
+
+---
+
+## 9. Trilhas paralelas
+
+### 9.1 AWS re/Start
+
+Enquanto estiver ativo:
+
+- faz parte da carga oficial;
+- Canvas não deve ser acumulado todas as noites;
+- tarefas obrigatórias têm prioridade;
+- o conteúdo deve ser relacionado ao curso SAA-C03.
+
+### 9.2 Google Cloud Skills
+
+Recursos disponíveis:
+
+- 30 créditos mensais;
+- US$ 10 mensais de Google Cloud.
+
+Frequência recomendada:
+
+- a cada quarta folga;
+- substituir dois blocos do roadmap;
+- não adicionar como terceira trilha simultânea.
+
+Programa:
+
+```text
+Professional Cloud DevOps Engineer
+https://www.skills.google/paths/20
+```
+
+A certificação profissional não precisa ser feita imediatamente.
+
+---
+
+## 10. Diferencial com Zabbix
+
+O Zabbix permanece como diferencial técnico, mas não haverá obrigação de um laboratório fixo por semana.
+
+Os laboratórios serão vinculados às competências estudadas.
+
+Exemplos:
+
+- Linux: instalação e troubleshooting do agente;
+- Python: automação via API;
+- Ansible: instalação em massa;
+- AWS: monitoramento de recursos;
+- Kubernetes: coleta e integração;
+- Prometheus: dashboards combinados;
+- SRE: SLA, SLO e incidentes;
+- AWX: remediação com aprovação.
+
+O objetivo é transformar experiência operacional em:
+
+- automação;
+- arquitetura;
+- integração;
+- confiabilidade;
+- portfólio.
+
+---
+
+## 11. Projetos de portfólio
+
+### Projeto 1 — Linux, Ansible e Zabbix
+
+Demonstrar:
+
+- administração Linux;
+- scripts;
+- Ansible;
+- instalação de agentes;
+- template;
+- LLD;
+- documentação.
+
+### Projeto 2 — Flask API em AWS e Kubernetes
+
+Demonstrar:
+
+- desenvolvimento;
+- testes;
+- Docker;
+- CI/CD;
+- Terraform;
+- AWS;
+- Kubernetes;
+- Helm;
+- segurança;
+- deployment.
+
+### Projeto 3 — Observabilidade e confiabilidade
+
+Demonstrar:
+
+- Prometheus;
+- Grafana;
+- logs;
+- traces;
+- OpenTelemetry;
+- SLO;
+- alertas;
+- runbook;
+- post-mortem.
+
+### Projeto 4 — Assistente agêntico controlado
+
+Demonstrar:
+
+- leitura de alertas;
+- coleta de contexto;
+- sugestão de diagnóstico;
+- aprovação humana;
+- auditoria.
+
+---
+
+## 12. Painel Estudos SRE
+
+O painel deve deixar de operar como um calendário rígido.
+
+### Funções obrigatórias
+
+- calcular automaticamente folga e trabalho;
+- gerar slots de estudo;
+- manter fila de atividades;
+- reagendar atividades adiadas;
+- registrar histórico;
+- mostrar curso atual;
+- mostrar próxima atividade;
+- separar teoria, prática e revisão;
+- acompanhar AWS re/Start;
+- acompanhar Google Cloud Skills;
+- mostrar progresso por competência;
+- registrar projetos e milestones;
+- exportar e importar backup.
+
+### O que o painel não deve fazer
+
+- impor prazo final fixo;
+- prender ID à data;
+- recalcular manualmente todas as datas;
+- marcar o aluno como atrasado por uma atividade adiada;
+- exigir quatro horas em todas as folgas;
+- considerar estudo noturno obrigatório após plantão;
+- obrigar laboratório Zabbix semanal.
+
+### Métricas úteis
+
+- blocos planejados;
+- blocos concluídos;
+- taxa de execução;
+- horas práticas;
+- horas de vídeo;
+- atividades adiadas;
+- sequência sustentável;
+- projetos concluídos;
+- competências consolidadas.
+
+A taxa de execução deve ser mais importante que uma data final artificial.
+
+---
+
+## 13. Critérios de prontidão para vagas
+
+Não é necessário concluir toda a trilha para começar a se candidatar.
+
+O aluno pode iniciar candidaturas quando conseguir demonstrar:
+
+- Linux e redes;
+- Git;
+- Python ou Bash;
+- Docker;
+- fundamentos de cloud;
+- Terraform;
+- CI/CD;
+- Kubernetes básico;
+- monitoramento;
+- experiência com incidentes;
+- ao menos dois projetos documentados.
+
+Para vagas SRE, também deve conseguir explicar:
+
+- SLI;
+- SLO;
+- SLA;
+- error budget;
+- toil;
+- alerta acionável;
+- post-mortem;
+- disponibilidade;
+- latência;
+- capacidade.
+
+---
+
+## 14. Resultado esperado
+
+O resultado não será definido por uma data específica.
+
+O projeto será bem-sucedido quando Robson puder demonstrar que consegue:
+
+1. administrar e diagnosticar sistemas Linux;
+2. compreender redes e dependências;
+3. escrever automações;
+4. versionar infraestrutura;
+5. criar pipelines;
+6. operar aplicações em containers;
+7. trabalhar com Kubernetes;
+8. implementar observabilidade;
+9. definir objetivos de confiabilidade;
+10. responder a incidentes;
+11. documentar decisões;
+12. apresentar projetos em entrevistas.
+
+A meta é tornar-se um profissional SRE ou DevOps competente, capaz de receber uma oportunidade e demonstrar valor.
+
+---
+
+## 15. Regra central do projeto
+
+> O cronograma deve se adaptar à vida do aluno. A vida do aluno não deve ser quebrada para obedecer ao cronograma.
+
+---
+
+*Versão 3.0 — 05/08/2026*  
+*Transição sustentável de Monitoramento para SRE/DevOps*

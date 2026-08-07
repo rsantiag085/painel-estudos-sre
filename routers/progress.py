@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from database import get_db
-from models import LessonProgress
+from models import LessonProgress, DeferredLesson
 from schemas import LessonProgressCreate, LessonProgressResponse
+from routers.deferred import find_next_folga
 
 router = APIRouter(prefix="/api/progress", tags=["progress"])
 
@@ -53,12 +54,64 @@ def upsert_progress(
     db.commit()
     db.refresh(row)
 
+    if payload.status == "skipped":
+        _create_deferred(lesson_id, db)
+
     return LessonProgressResponse(
         lesson_id=row.lesson_id,
         status=row.status,
         note=row.note or "",
         updated_at=row.updated_at,
     )
+
+
+def _create_deferred(lesson_id: str, db: Session) -> None:
+    """Cria entrada em deferred_lessons quando uma lição é pulada."""
+    from data.curriculum import WEEKS
+
+    date_str = lesson_id[:10]          # "YYYY-MM-DD"
+    idx = int(lesson_id[11:])          # índice da lição no dia
+
+    lesson = None
+    for week_data in WEEKS.values():
+        if date_str in week_data["dates"]:
+            lessons = week_data["dates"][date_str]["lessons"]
+            if idx < len(lessons):
+                lesson = lessons[idx]
+            break
+
+    if lesson is None:
+        return  # lição não encontrada no currículo, ignora
+
+    # Não cria deferred para lições passivas (podcasts, Udemy English)
+    if lesson.get("block") == "passivo":
+        return
+
+    # Cancela deferred anterior pendente para a mesma lição (re-skip da original)
+    existing = (
+        db.query(DeferredLesson)
+        .filter(
+            DeferredLesson.original_lesson_id == lesson_id,
+            DeferredLesson.status == "pending",
+        )
+        .first()
+    )
+    if existing:
+        return  # já existe deferred pendente para esta lição
+
+    target_date = find_next_folga(date_str)
+
+    db.add(DeferredLesson(
+        original_lesson_id=lesson_id,
+        lesson_name=lesson["name"],
+        lesson_hours=lesson["h"],
+        lesson_type=lesson.get("type", "aula"),
+        lesson_tag=lesson.get("tag"),
+        lesson_block=lesson.get("block", "manha"),
+        target_date=target_date,
+        status="pending",
+    ))
+    db.commit()
 
 
 # ── v2.0 — Novos endpoints ────────────────────────────────────────────────────
@@ -93,6 +146,36 @@ def get_week_progress(week_num: int, db: Session = Depends(get_db)):
                 "status": p["status"],
                 "note": p["note"] or "",
             })
+
+    # Injeta lições diferidas pendentes nos dias de FOLGA da semana
+    deferred_rows = (
+        db.query(DeferredLesson)
+        .filter(
+            DeferredLesson.target_date.in_(sorted(week_data["dates"].keys())),
+            DeferredLesson.status == "pending",
+        )
+        .order_by(DeferredLesson.target_date, DeferredLesson.id)
+        .all()
+    )
+    for dr in deferred_rows:
+        lessons.insert(
+            next((i for i, l in enumerate(lessons) if l["date"] == dr.target_date), 0),
+            {
+                "lesson_id": f"deferred-{dr.id}",
+                "date": dr.target_date,
+                "day_type": "F",
+                "name": dr.lesson_name,
+                "hours": dr.lesson_hours,
+                "type": dr.lesson_type,
+                "tag": dr.lesson_tag,
+                "block": dr.lesson_block,
+                "status": "pending",
+                "note": "",
+                "deferred": True,
+                "deferred_id": dr.id,
+                "original_lesson_id": dr.original_lesson_id,
+            },
+        )
 
     done = sum(1 for l in lessons if l["status"] == "done")
     return {

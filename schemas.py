@@ -1,9 +1,251 @@
 """
 schemas.py — Pydantic schemas para request/response
 """
-from typing import Optional
-from datetime import datetime
-from pydantic import BaseModel
+from datetime import date, datetime
+from typing import Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+ActivityStatus = Literal[
+    "pending",
+    "in_progress",
+    "done",
+    "deferred",
+    "blocked",
+    "skipped",
+    "cancelled",
+]
+DayType = Literal["FOLGA", "TRABALHO"]
+SlotStatus = Literal["available", "scheduled", "completed", "missed", "cancelled"]
+
+
+class ORMResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ── Catálogo dinâmico ───────────────────────────────────────────────────────
+
+
+class CourseBase(BaseModel):
+    id: str
+    name: str
+    provider: str = ""
+    url: str = ""
+    video_hours: float = Field(default=0.0, ge=0)
+    priority: Literal["very_high", "high", "medium", "low"]
+    execution: Literal["full", "selective", "optional"]
+    phase: int = Field(ge=1, le=5)
+    status: Literal["available", "in_progress", "planned", "future"]
+    prerequisites: list[str] = Field(default_factory=list)
+    notes: str = ""
+
+
+class CourseCreate(CourseBase):
+    pass
+
+
+class CourseResponse(CourseBase, ORMResponse):
+    created_at: datetime
+    updated_at: datetime
+
+
+class ActivityBase(BaseModel):
+    id: str
+    course_id: str
+    sequence: int = Field(gt=0)
+    name: str
+    duration_minutes: int = Field(default=30, gt=0, multiple_of=30)
+    activity_type: Literal[
+        "lesson", "lab", "project", "review", "reading", "quiz", "exam"
+    ]
+    preferred_day_type: Literal["FOLGA", "TRABALHO", "ANY"] = "ANY"
+    preferred_slot: Literal[
+        "THEORY", "PRACTICE", "REVIEW", "AWS", "READING", "ANY"
+    ] = "ANY"
+    prerequisites: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    required: bool = True
+
+
+class ActivityCreate(ActivityBase):
+    pass
+
+
+class ActivityResponse(ActivityBase, ORMResponse):
+    created_at: datetime
+    updated_at: datetime
+
+
+class StudySlotBase(BaseModel):
+    id: str
+    study_date: date
+    day_type: DayType
+    slot_code: str
+    start_time: str
+    duration_minutes: int = Field(default=30, gt=0)
+    slot_type: str
+    status: SlotStatus = "available"
+
+
+class StudySlotCreate(StudySlotBase):
+    pass
+
+
+class StudySlotResponse(StudySlotBase, ORMResponse):
+    created_at: datetime
+    updated_at: datetime
+
+
+class ActivityProgressBase(BaseModel):
+    activity_id: str
+    status: ActivityStatus = "pending"
+    note: str = ""
+    current_slot_id: Optional[str] = None
+    defer_count: int = Field(default=0, ge=0)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+
+class ActivityProgressCreate(ActivityProgressBase):
+    pass
+
+
+class ActivityProgressResponse(ActivityProgressBase, ORMResponse):
+    created_at: datetime
+    updated_at: datetime
+
+
+class ActivityHistoryCreate(BaseModel):
+    activity_id: str
+    study_slot_id: Optional[str] = None
+    event_type: str
+    from_status: Optional[ActivityStatus] = None
+    to_status: Optional[ActivityStatus] = None
+    note: str = ""
+
+
+class ActivityHistoryResponse(ActivityHistoryCreate, ORMResponse):
+    id: int
+    created_at: datetime
+
+
+class AppSettingBase(BaseModel):
+    key: str
+    value: str
+
+
+class AppSettingCreate(AppSettingBase):
+    pass
+
+
+class AppSettingResponse(AppSettingBase, ORMResponse):
+    updated_at: datetime
+
+
+# ── API dinâmica ─────────────────────────────────────────────────────────────
+
+
+class ActivityView(ActivityBase):
+    status: ActivityStatus
+    note: str = ""
+    current_slot_id: Optional[str] = None
+    defer_count: int = 0
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+
+class CourseView(CourseBase):
+    activities_total: int
+    activities_done: int
+    progress_pct: int
+
+
+class ScheduledActivity(BaseModel):
+    id: str
+    course_id: str
+    name: str
+    sequence: int
+    activity_type: str
+    status: ActivityStatus
+
+
+class ScheduleSlotView(StudySlotBase):
+    activity: Optional[ScheduledActivity] = None
+
+
+class ScheduleDayResponse(BaseModel):
+    date: date
+    day_type: DayType
+    slots: list[ScheduleSlotView]
+
+
+class ScheduleRangeResponse(BaseModel):
+    start_date: date
+    end_date: date
+    days: list[ScheduleDayResponse]
+
+
+class ScheduleGenerateRequest(BaseModel):
+    start_date: date
+    end_date: Optional[date] = None
+    allocate: bool = False
+
+
+class ScheduleGenerateResponse(BaseModel):
+    start_date: date
+    end_date: date
+    days_processed: int
+    slots_created: int
+    slots_existing: int
+    slots_total: int
+    activities_allocated: int
+
+
+class AllocationRequest(BaseModel):
+    activity_id: Optional[str] = None
+    note: str = ""
+
+
+class ActivityCommandRequest(BaseModel):
+    note: str = ""
+
+
+class ProgressGroup(BaseModel):
+    id: str
+    label: str
+    total: int
+    done: int
+    in_progress: int
+    deferred: int
+    blocked: int
+    skipped: int
+    cancelled: int
+    pending: int
+    pct: int
+    minutes_completed: int
+
+
+class ProgressSummaryResponse(BaseModel):
+    total: int
+    done: int
+    in_progress: int
+    deferred: int
+    blocked: int
+    skipped: int
+    cancelled: int
+    pending: int
+    pct: int
+    minutes_completed: int
+    hours_completed: float
+    slots_completed: int
+    slots_missed: int
+    execution_rate_pct: int
+
+
+class DynamicStatsResponse(ProgressSummaryResponse):
+    by_phase: list[ProgressGroup]
+    by_course: list[ProgressGroup]
 
 
 # ── LessonProgress ──────────────────────────────────────────────────────────
@@ -61,6 +303,31 @@ class PhaseStats(BaseModel):
     total: int
     pct: int
 
+
+# ── DeferredLesson ────────────────────────────────────────────────────────────
+
+class DeferredLessonUpdate(BaseModel):
+    status: str          # 'done' | 'skipped'
+    note: Optional[str] = ""
+
+
+class DeferredLessonResponse(BaseModel):
+    id: int
+    original_lesson_id: str
+    lesson_name: str
+    lesson_hours: float
+    lesson_type: str
+    lesson_tag: Optional[str]
+    lesson_block: str
+    target_date: str
+    status: str
+    note: str
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── Stats ─────────────────────────────────────────────────────────────────────
 
 class StatsResponse(BaseModel):
     done: int

@@ -1,4 +1,7 @@
 # ✅ SUMÁRIO EXECUTIVO FINAL
+
+> **DOCUMENTO HISTÓRICO:** métricas de semanas e prazo abaixo não representam o
+> funcionamento atual da aplicação, que não possui data final rígida.
 **Robson Santiago | NOC Sênior → SRE | Status: PRONTO PARA COMEÇAR**
 
 ---

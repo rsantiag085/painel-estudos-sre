@@ -1,467 +1,1196 @@
-# Cursos SRE — Catálogo Completo (v2.0)
-**Robson Santiago de Oliveira | NOC Sênior → SRE**
-**Período:** 10/06/2026 a 16/01/2027 — 36 semanas | 5 fases | 30 Labs Zabbix
-**Versão:** v2.0 — atualizado com 12 cursos pagos + 13 gratuitos + 30 Labs Zabbix
+# Catálogo e Trilha de Estudos SRE — Robson Santiago
+
+**Objetivo profissional:** transição de Analista de Monitoramento para SRE ou DevOps remoto  
+**Escala de referência:** 12x36  
+**Data-base da escala:** 05/08/2026 = FOLGA; 06/08/2026 = TRABALHO  
+**Versão:** 3.0 — catálogo dinâmico, sem prazo final fixo
 
 ---
 
-## 🧪 Labs Zabbix — 30 Semanas (S05–S34)
+## Estado de implementação
 
-> **Diferencial de carreira:** expertise em monitoramento avançado com Zabbix.
-> 1 lab por semana, integrado ao conteúdo da fase. ~1h cada.
+O catálogo descrito neste documento está materializado por `COURSES` e `ACTIVITIES`
+em `data/curriculum.py`. O serviço de seed sincroniza esses registros de forma
+idempotente com as tabelas `courses` e `activities`.
 
-| Lab | Semana | Data | Tema |
-|-----|--------|------|------|
-| #1  | S05 | 04/06[F] | Zabbix agent install em VM Ubuntu |
-| #2  | S06 | 11/06[F] | Custom network monitoring items (interface eth0) |
-| #3  | S07 | 18/06[T] | Bash external check — health_check.sh integrado |
-| #4  | S08 | 25/06[F] | Scripts bash commitados no GitHub |
-| #5  | S09 | 02/07[T] | Python consome Zabbix API — zabbix_api.py |
-| #6  | S10 | 09/07[F] | Python + Zabbix + SQLite data pipeline |
-| #7  | S11 | 16/07[T] | Python integração Zabbix API — templates e triggers |
-| #8  | S12 | 23/07[F] | Zabbix integração Python API — criar templates |
-| #9  | S13 | 30/07[T] | AWS EC2 com Zabbix agent via user-data script |
-| #10 | S14 | 06/08[F] | RDS MySQL monitorada via CloudWatch + Zabbix |
-| #11 | S15 | 13/08[F] | Lambda + SNS → Zabbix webhook integration |
-| #12 | S16 | 20/08[T] | Stack completa AWS monitorada end-to-end no Zabbix |
-| #13 | S17 | 27/08[F] | Ansible playbook instala Zabbix agent em 5 VMs |
-| #14 | S18 | 03/09[T] | Ansible gerencia templates Zabbix via API |
-| #15 | S19 | 10/09[T] | Alerta Zabbix → Webhook → AWX Job → remediação |
-| #16 | S20 | 17/09[F] | Flask Docker + Zabbix HTTP agent health check |
-| #17 | S21 | 24/09[T] | Terraform + Ansible + Zabbix integrados (IaC) |
-| #18 | S22 | 01/10[F] | AWX workflow: Zabbix alerta → AWX → remediação auto |
-| #19 | S23 | 08/10[T] | GitHub Actions → Zabbix event API notification |
-| #20 | S24 | 15/10[F] | Deploy validation via Zabbix HTTP agent |
-| #21 | S25 | 22/10[T] | K8s nodes monitorados via kube-state-metrics + Zabbix |
-| #22 | S26 | 29/10[F] | Zabbix on K8s via Helm — self-monitoring cluster |
-| #23 | S27 | 05/11[T] | Zabbix → Prometheus exporter → Grafana unificado |
-| #24 | S28 | 12/11[T] | Error budget tracking em Zabbix dashboard |
-| #25 | S29 | 19/11[F] | Mock incident — Zabbix alerta, runbook, postmortem |
-| #26 | S30 | 26/11[T] | Full automation: Deploy → Monitor → Alert → Remediate |
-| #27 | S31 | 03/12[F] | Zabbix on K8s (capstone) — custom template |
-| #28 | S32 | 10/12[T] | Prometheus + Zabbix integração — métricas unificadas |
-| #29 | S33 | 17/12[F] | SLO dashboard Zabbix completo + error budget |
-| #30 | S34 | 24/12[T] | End-to-end automated incident response + postmortem |
+A ordem pedagógica é representada pelo campo `sequence`; datas e slots são
+responsabilidade dos serviços de escala e scheduling. `WEEKS` não deve ser usado
+para criar novas alocações.
 
 ---
 
+## 1. Finalidade deste arquivo
 
-## Regras de Negócio da Escala (LEIA ANTES DE TUDO)
+Este arquivo define:
 
-```
-ESCALA:      12x36 (12h trabalhando → 36h de folga)
-ROTAÇÃO:     Dias PARES = TRABALHO | Dias ÍMPARES = FOLGA
-ESTUDO FOLGA:  4h/dia → 2h manhã (09h–11h) + 2h tarde (14h–16h)
-ESTUDO TRAB:   0.5h/dia → passivo: podcast técnico, audiobook, revisão mental
-SEMANA:      Segunda a Domingo (7 dias, sem distinção fim de semana)
-```
+- os cursos e recursos aprovados para a trilha;
+- a ordem pedagógica recomendada;
+- os pré-requisitos entre competências;
+- a prioridade de cada conteúdo;
+- quais cursos devem ser feitos integralmente ou seletivamente;
+- os projetos usados para comprovar aprendizado;
+- as trilhas paralelas de AWS e Google Cloud.
 
-**Por que seg–dom:** No 12x36, sábado e domingo alternam entre folga e trabalho. Um sábado é dia de 4h de estudo; o seguinte é dia de plantão. O cronograma deve tratar cada dia pelo seu tipo (FOLGA/TRAB), não pelo nome do dia da semana.
+Este arquivo **não define datas fixas para cada aula**.
 
-**Capacidade real:**
-- Semanas com 4 folgas: **16h + 1.5h passivo = 17.5h disponíveis**
-- Semanas com 3 folgas: **12h + 2.0h passivo = 14.0h disponíveis**
-- Média ponderada: **~15.6h/semana**
-- Total maio–dezembro: **~560h disponíveis**
-- Total carga dos cursos: **123h** (sobra ampla margem para labs e revisão)
+Datas, horários, reagendamentos e slots da escala 12x36 devem ser gerenciados dinamicamente pela aplicação. Uma atividade não concluída deve voltar para a fila e ocupar um próximo slot compatível, sem reescrever todo o roadmap.
 
 ---
 
-## Cursos — Catálogo Completo
+## 2. Regras pedagógicas
 
-### Plataforma: Udemy
+### 2.1 Uma trilha principal por vez
 
-| # | Curso | Carga Horária | Fase SRE | Tipo | URL |
-|---|-------|--------------|----------|------|-----|
-| 1 | SRE DevOps: Jornada do Início ao Fim | **4h** | Fase 1 | Aula | https://www.udemy.com/course/jornada-devops-sre-do-inicio-ao-fim/ |
-| 2 | Administração de Sistemas GNU/Linux: Fundamentos e Prática | **9h** | Fase 1 | Aula | https://www.udemy.com/course/adm-so-gnulinux/ |
-| 3 | Python para DevOps | **7.5h** | Fase 2 | Aula | https://www.udemy.com/course/python-para-devops/ |
-| 4 | GitHub Actions: Guia Completo — Do Zero ao Deploy | **7h** | Fase 4 | Aula | https://www.udemy.com/course/github-actions-guia-completo-do-zero-ao-deploy/ |
-| 5 | Ansible para SysAdmin | **19h** | Fase 3 | Aula | https://www.udemy.com/course/ansible-para-sysadmin/ |
-| 6 | AWX para Sysadmin | **8h** | Fase 3 | Aula | https://www.udemy.com/course/awx-para-sysadmin/ |
-| 7 | Projeto DevOps: Flask API — Do Código ao Deploy | **14h** | Fase 4 | Projeto | https://www.udemy.com/course/projeto-devops-flask-api-do-codigo-ao-deploy/ |
-| 8 | Kubernetes Completo: Orquestração Docker + Projeto DevOps | **19h** | Fase 4 | Aula+Projeto | https://www.udemy.com/course/kubernetes-power-profissional-formacao-inicial-completa/ |
-| 9 | Certificação AWS Solutions Architect Associate SAA-C03 | **30.5h** | Fase 3 | Aula+Exam | https://www.udemy.com/course/certificacao-amazon-aws-2019-solutions-architect/ |
+A aplicação deve manter no máximo:
 
-### Plataforma: LinuxTips
+1. **uma trilha principal do roadmap SRE**;
+2. **uma trilha paralela obrigatória**, enquanto existir:
+   - AWS re/Start e Canvas;
+   - Google Cloud Skills, em frequência controlada.
 
-| # | Curso | Carga Horária | Fase SRE | Tipo | URL |
-|---|-------|--------------|----------|------|-----|
-| 10 | Terraform Essentials | **5h** | Fase 3 | Aula | https://linuxtips.io/treinamento/terraform-essentials/ |
+Não iniciar dois cursos técnicos principais simultaneamente.
 
-### Plataforma: Alura Línguas (acesso empresa — 4 meses a partir de 11/03/26)
+### 2.2 Aprendizado orientado a prática
 
-| # | Curso | Carga Horária | Fase SRE | Tipo | URL |
-|---|-------|--------------|----------|------|-----|
-| 11 | Inglês Técnico para DevOps/SRE | **Paralelo** | Todas | Passivo/Ativo | https://www.aluralingua.com.br/ |
+Cada curso deve gerar ao menos um dos seguintes resultados:
 
-> **Nota Alura Línguas:** Sem carga fixa. Usar 20min/dia nos dias de TRABALHO (substitui parte do passivo) e 1 sessão de 30min nas folgas opcionalmente. Foco em: leitura de documentação técnica, listening de podcasts SRE em inglês, escrita de commit messages e READMEs.
+- laboratório versionado;
+- script;
+- documentação;
+- dashboard;
+- pipeline;
+- infraestrutura reproduzível;
+- runbook;
+- post-mortem;
+- projeto de portfólio.
 
-### Conteúdo Gratuito (sem custo, integrado ao cronograma)
+Concluir videoaulas sem prática não representa domínio da competência.
 
-| Recurso | Carga Estimada | Fase | Tipo | URL |
-|---------|---------------|------|------|-----|
-| Linux Journey | 3h | Fase 1 | Leitura interativa | https://linuxjourney.com |
-| OverTheWire Bandit (levels 1–15) | 4h | Fase 1 | Prática gamificada | https://overthewire.org/wargames/bandit/ |
-| The Linux Command Line (livro) | 5h | Fase 1 | Leitura | https://linuxcommand.org/tlcl.php |
-| Practical Networking (YouTube) | 4h | Fase 1 | Vídeo | https://youtube.com/@PracticalNetworking |
-| Learn Git Branching | 2h | Fase 2 | Interativo | https://learngitbranching.js.org |
-| Pro Git Book (caps 1–5) | 3h | Fase 2 | Leitura | https://git-scm.com/book |
-| IA Aplicada a SRE/DevOps | 4h | Fases 1,2 | Prática/Prompting | ChatGPT/Claude (Self-study) |
-| Automate the Boring Stuff (caps 1–8) | 4h | Fase 2 | Leitura | https://automatetheboringstuff.com |
-| SQLBolt | 2h | Fase 2 | Interativo | https://sqlbolt.com |
-| Google SRE Book (seleção de caps) | 6h | Fases 1,4,5 | Leitura | https://sre.google/sre-book/table-of-contents/ |
-| KillerCoda — Kubernetes Scenarios | 4h | Fase 4 | Lab interativo | https://killercoda.com |
-| Prometheus Docs + Tutorials | 3h | Fase 4 | Leitura/Lab | https://prometheus.io/docs |
-| Grafana Tutorials | 2h | Fase 4 | Lab | https://grafana.com/tutorials |
+### 2.3 Critério para avançar
 
----
+Uma competência pode ser considerada consolidada quando o aluno consegue:
 
-## Resumo de Carga por Fase
+- explicar os conceitos principais;
+- executar uma atividade sem copiar integralmente a aula;
+- diagnosticar erros básicos;
+- documentar o procedimento;
+- aplicar o conteúdo em um projeto próprio.
 
-| Fase | Período | Semanas | Cursos Pagos | Gratuito | Total Fase | H Disponíveis |
-|------|---------|---------|-------------|---------|-----------|---------------|
-| 1 — Foundation | Mai S1–S5 | 5 | Curso 1 (4h) + Curso 2 (9h) = 13h | ~12h | ~25h | ~76h |
-| 2 — Core Skills | Mai S5–Jun S9 | 4 | Curso 3 (7.5h) = 7.5h | ~11h | ~18.5h | ~63h |
-| 3 — Infra & Cloud | Jun S9–Ago S18 | 9 | Cursos 5+6+9+10 (62.5h) | ~5h | ~67.5h | ~141h |
-| 4 — Advanced SRE | Set S19–Nov S29 | 11 | Cursos 4+7+8 (40h) | ~9h | ~49h | ~173h |
-| 5 — Especialização | Nov S29–Dez S36 | 7 | — | ~8h | ~8h | ~107h |
-| **TOTAL** | **Mai–Dez** | **36** | **123h** | **~45h** | **~168h** | **~560h** |
+### 2.4 Revisão
 
-> **Margem:** 560h disponíveis − 168h de conteúdo = ~392h para labs, revisão, projetos práticos e capstone. Isso é intencional — SRE se aprende fazendo, não só assistindo.
+Após cada curso principal:
+
+- realizar uma sessão de revisão;
+- finalizar o laboratório;
+- atualizar o README do projeto;
+- registrar dificuldades e pontos que precisam de reforço.
 
 ---
 
-## Calendário Real da Escala — Maio a Dezembro 2026
+## 3. Capacidade de estudo na escala 12x36
 
-**Legenda:**
-- `[F]` = FOLGA → 4h estudo (2h manhã + 2h tarde)
-- `[T]` = TRABALHO → 0.5h passivo (podcast/revisão)
+### Dia de folga
 
-```
-MAIO 2026
-S01 ( 8.5h)  Sex 09/05[F]  Sáb 10/05[T]  Dom 11/05[F]
-S02 (14.0h)  Seg 12/05[T]  Ter 13/05[F]  Qua 14/05[T]  Qui 15/05[F]  Sex 16/05[T]  Sáb 17/05[F]  Dom 18/05[T]
-S03 (17.5h)  Seg 19/05[F]  Ter 20/05[T]  Qua 21/05[F]  Qui 22/05[T]  Sex 23/05[F]  Sáb 24/05[T]  Dom 25/05[F]
-S04 (14.0h)  Seg 26/05[T]  Ter 27/05[F]  Qua 28/05[T]  Qui 29/05[F]  Sex 30/05[T]  Sáb 31/05[F]  Dom 01/06[T]
-S05 (17.5h)  Seg 02/06[F]  Ter 03/06[T]  Qua 04/06[F]  Qui 05/06[T]  Sex 06/06[F]  Sáb 07/06[T]  Dom 08/06[F]
+Carga mínima do roadmap: **2 horas**, divididas em quatro blocos de 30 minutos.
 
-JUNHO 2026
-S06 (17.5h)  Seg 09/06[F]  Ter 10/06[T]  Qua 11/06[F]  Qui 12/06[T]  Sex 13/06[F]  Sáb 14/06[T]  Dom 15/06[F]
-S07 (14.0h)  Seg 16/06[T]  Ter 17/06[F]  Qua 18/06[T]  Qui 19/06[F]  Sex 20/06[T]  Sáb 21/06[F]  Dom 22/06[T]
-S08 (17.5h)  Seg 23/06[F]  Ter 24/06[T]  Qua 25/06[F]  Qui 26/06[T]  Sex 27/06[F]  Sáb 28/06[T]  Dom 29/06[F]
-S09 (14.0h)  Seg 30/06[T]  Ter 01/07[F]  Qua 02/07[T]  Qui 03/07[F]  Sex 04/07[T]  Sáb 05/07[F]  Dom 06/07[T]
+Slots preferenciais:
 
-JULHO 2026
-S10 (17.5h)  Seg 07/07[F]  Ter 08/07[T]  Qua 09/07[F]  Qui 10/07[T]  Sex 11/07[F]  Sáb 12/07[T]  Dom 13/07[F]
-S11 (14.0h)  Seg 14/07[T]  Ter 15/07[F]  Qua 16/07[T]  Qui 17/07[F]  Sex 18/07[T]  Sáb 19/07[F]  Dom 20/07[T]
-S12 (17.5h)  Seg 21/07[F]  Ter 22/07[T]  Qua 23/07[F]  Qui 24/07[T]  Sex 25/07[F]  Sáb 26/07[T]  Dom 27/07[F]
-S13 (14.0h)  Seg 28/07[T]  Ter 29/07[F]  Qua 30/07[T]  Qui 31/07[F]  Sex 01/08[T]  Sáb 02/08[F]  Dom 03/08[T]
-S14 (17.5h)  Seg 04/08[F]  Ter 05/08[T]  Qua 06/08[F]  Qui 07/08[T]  Sex 08/08[F]  Sáb 09/08[F]  Dom 10/08[T]
+| Slot | Horário sugerido | Uso |
+|---|---|---|
+| F1 | 13h30–14h00 | teoria |
+| F2 | 14h10–14h40 | teoria ou exercício |
+| F3 | 15h20–15h50 | laboratório |
+| F4 | 16h00–16h30 | laboratório, revisão ou AWS |
 
-AGOSTO 2026
-S15 (17.5h)  Seg 11/08[F]  Ter 12/08[T]  Qua 13/08[F]  Qui 14/08[T]  Sex 15/08[F]  Sáb 16/08[T]  Dom 17/08[F]
-S16 (14.0h)  Seg 18/08[T]  Ter 19/08[F]  Qua 20/08[T]  Qui 21/08[F]  Sex 22/08[T]  Sáb 23/08[F]  Dom 24/08[T]
-S17 (17.5h)  Seg 25/08[F]  Ter 26/08[T]  Qua 27/08[F]  Qui 28/08[T]  Sex 29/08[F]  Sáb 30/08[T]  Dom 31/08[F]
-S18 (14.0h)  Seg 01/09[T]  Ter 02/09[F]  Qua 03/09[T]  Qui 04/09[F]  Sex 05/09[T]  Sáb 06/09[F]  Dom 07/09[T]
+Slot opcional:
 
-SETEMBRO 2026
-S19 (17.5h)  Seg 08/09[F]  Ter 09/09[F]  Qua 10/09[T]  Qui 11/09[F]  Sex 12/09[T]  Sáb 13/09[F]  Dom 14/09[T]
-S20 (17.5h)  Seg 15/09[F]  Ter 16/09[T]  Qua 17/09[F]  Qui 18/09[T]  Sex 19/09[F]  Sáb 20/09[T]  Dom 21/09[F]
-S21 (14.0h)  Seg 22/09[T]  Ter 23/09[F]  Qua 24/09[T]  Qui 25/09[F]  Sex 26/09[T]  Sáb 27/09[F]  Dom 28/09[T]
-S22 (17.5h)  Seg 29/09[F]  Ter 30/09[T]  Qua 01/10[F]  Qui 02/10[T]  Sex 03/10[F]  Sáb 04/10[T]  Dom 05/10[F]
-S23 (14.0h)  Seg 06/10[T]  Ter 07/10[F]  Qua 08/10[T]  Qui 09/10[F]  Sex 10/10[T]  Sáb 11/10[F]  Dom 12/10[T]
+| Slot | Horário sugerido | Uso |
+|---|---|---|
+| FX | espera do ônibus, aproximadamente 30 min | leitura, flashcards ou revisão leve |
 
-OUTUBRO 2026
-S24 (17.5h)  Seg 13/10[F]  Ter 14/10[T]  Qua 15/10[F]  Qui 16/10[T]  Sex 17/10[F]  Sáb 18/10[T]  Dom 19/10[F]
-S25 (14.0h)  Seg 20/10[T]  Ter 21/10[F]  Qua 22/10[T]  Qui 23/10[F]  Sex 24/10[T]  Sáb 25/10[F]  Dom 26/10[T]
-S26 (17.5h)  Seg 27/10[F]  Ter 28/10[T]  Qua 29/10[F]  Qui 30/10[T]  Sex 31/10[F]  Sáb 01/11[T]  Dom 02/11[F]
-S27 (17.5h)  Seg 03/11[T]  Ter 04/11[F]  Qua 05/11[T]  Qui 06/11[F]  Sex 07/11[T]  Sáb 08/11[F]  Dom 09/11[F]
+### Dia de trabalho
 
-NOVEMBRO 2026
-S28 (14.0h)  Seg 10/11[T]  Ter 11/11[F]  Qua 12/11[T]  Qui 13/11[F]  Sex 14/11[T]  Sáb 15/11[F]  Dom 16/11[T]
-S29 (17.5h)  Seg 17/11[F]  Ter 18/11[T]  Qua 19/11[F]  Qui 20/11[T]  Sex 21/11[F]  Sáb 22/11[T]  Dom 23/11[F]
-S30 (14.0h)  Seg 24/11[T]  Ter 25/11[F]  Qua 26/11[T]  Qui 27/11[F]  Sex 28/11[T]  Sáb 29/11[F]  Dom 30/11[T]
-S31 (17.5h)  Seg 01/12[F]  Ter 02/12[T]  Qua 03/12[F]  Qui 04/12[T]  Sex 05/12[F]  Sáb 06/12[T]  Dom 07/12[F]
+Carga mínima: **1 hora**, dividida em dois blocos de 30 minutos.
 
-DEZEMBRO 2026
-S32 (14.0h)  Seg 08/12[T]  Ter 09/12[F]  Qua 10/12[T]  Qui 11/12[F]  Sex 12/12[T]  Sáb 13/12[F]  Dom 14/12[T]
-S33 (17.5h)  Seg 15/12[F]  Ter 16/12[T]  Qua 17/12[F]  Qui 18/12[T]  Sex 19/12[F]  Sáb 20/12[T]  Dom 21/12[F]
-S34 (14.0h)  Seg 22/12[T]  Ter 23/12[F]  Qua 24/12[T]  Qui 25/12[F]  Sex 26/12[T]  Sáb 27/12[F]  Dom 28/12[T]
-S35 (17.5h)  Seg 29/12[F]  Ter 30/12[T]  Qua 31/12[F]  Qui 01/01[T]  Sex 02/01[F]  Sáb 03/01[T]  Dom 04/01[F]
-S36 ( 9.0h)  Seg 05/01[T]  Ter 06/01[F]  Qua 07/01[T]  Qui 08/01[F]
-```
+| Slot | Horário sugerido | Uso |
+|---|---|---|
+| T1 | 7h00–7h30 | curso principal |
+| T2 | intervalo de almoço | revisão, AWS ou leitura |
 
----
+O período noturno de dias de trabalho não deve ser utilizado para compensar estudos perdidos. A prioridade é preservar o sono.
 
-## Mapeamento Curso × Semanas do Calendário
-
-> Esta seção diz ao Claude Code **quando** cada curso acontece na escala real.
-
-### Fase 1 — Foundation (Semanas S01–S05 | ~76h disponíveis)
-
-**Curso 1: SRE DevOps: Jornada do Início ao Fim — 4h**
-```
-Carga:     4h total
-Sessões:   2 folgas × 2h manhã
-Quando:    S01 (09/05[F], 11/05[F]) — conclui na primeira semana
-Uso:       2h manhã cada dia de folga
-Plantão:   Revisão mental dos conceitos SRE
-```
-
-**Curso 2: GNU/Linux Fundamentos e Prática — 9h**
-```
-Carga:     9h total
-Sessões:   ~5 folgas × (manhã 2h ou tarde 2h)
-Quando:    S02–S04 (13/05 a 31/05)
-Distribuição sugerida:
-  S02: Ter 13/05[F] manhã 2h (Módulo 1–2) + tarde 2h (Módulo 3)
-       Qui 15/05[F] manhã 2h (Módulo 4) + tarde 2h (Módulo 5)
-       Sáb 17/05[F] manhã 1h (Módulo 6 — início)
-  S03: Seg 19/05[F] manhã 1h (Módulo 6 — conclusão)  → 9h concluídas
-Plantão:   Podcast "Linux For Everyone", "Command Line Heroes"
-```
-
-**Conteúdo Gratuito Fase 1 — 18h estimadas**
-```
-Linux Journey:        S02–S03 → tardes de folga (complemento ao curso)
-Practical Networking: S03–S04 → manhãs de folga
-OverTheWire Bandit:   S04–S05 → tardes de folga (gamificado, motivador)
-Google SRE Book c1–3: S04–S05 → 1 sessão por folga (leitura, 1h)
-The Linux Cmd Line:   S02–S05 → leitura passiva nas folgas noturnas
-```
-
----
-
-### Fase 2 — Core Skills (Semanas S05–S09 | ~63h disponíveis)
-
-**Curso 3: Python para DevOps — 7.5h**
-```
-Carga:     7.5h total
-Sessões:   ~4 folgas × 2h
-Quando:    S05–S07 (02/06 a 20/06)
-Distribuição sugerida:
-  S05: Dom 08/06[F] manhã 2h (Módulos 1–2: variáveis, estruturas)
-  S06: Seg 09/06[F] manhã 2h (Módulos 3–4: funções, requests)
-       Qua 11/06[F] manhã 2h (Módulos 5–6: error handling, logging)
-       Sex 13/06[F] manhã 1.5h (Módulos 7–8: subprocess, venv) → concluído
-Plantão:   Podcast "Talk Python to Me", "Python Bytes"
-```
-
-**Conteúdo Gratuito Fase 2 — 11h estimadas**
-```
-Learn Git Branching:       S05 → 1 folga, 2h (interativo, essencial)
-Pro Git Book (caps 1–5):   S06 → leitura distribuída nas folgas
-Automate Boring Stuff:     S07–S08 → complemento Python
-SQLBolt:                   S08 → 1 folga, 2h (SQL interativo)
-```
-
----
-
-### Fase 3 — Infra & Cloud (Semanas S09–S18 | ~141h disponíveis)
-
-**Curso 9: AWS Solutions Architect SAA-C03 — 30.5h**
-```
-Carga:     30.5h total  ← MAIOR curso, exige mais semanas
-Sessões:   ~16 folgas × 2h (manhã) = 32h → completa com 1 folga de margem
-Quando:    S09–S14 (30/06 a 03/08)
-Distribuição sugerida (manhãs de folga):
-  S09:  Ter 01/07[F]  Qui 03/07[F]  Sáb 05/07[F]  → 6h (IAM, EC2, VPC)
-  S10:  Seg 07/07[F]  Qua 09/07[F]  Sex 11/07[F]  Dom 13/07[F] → 8h (S3, RDS, ELB)
-  S11:  Ter 15/07[F]  Qui 17/07[F]  Sáb 19/07[F]  → 6h (CloudWatch, CF, Security)
-  S12:  Seg 21/07[F]  Qua 23/07[F]  Sex 25/07[F]  Dom 27/07[F] → 8h (Lambda, SQS, Route53)
-  S13:  Ter 29/07[F]  Qui 31/07[F]  → 2.5h (Revisão + simulado parcial)
-  S14:  concluído → tarde simulado final, agendar prova SAA-C03
-Plantão:   "AWS re:Invent talks" (YouTube offline), flashcards AWS no celular
-```
-
-**Curso 10: Terraform Essentials — 5h**
-```
-Carga:     5h total
-Sessões:   3 folgas × (manhã ou tarde 2h)
-Quando:    S14–S15 (04/08 a 17/08) — logo após AWS, enquanto IaC está fresco
-Distribuição:
-  S14:  Sex 08/08[F] tarde 2h (sintaxe, providers, resources)
-  S15:  Seg 11/08[F] tarde 2h (variables, state, módulos)
-        Qua 13/08[F] tarde 1h (boas práticas, conclusão)
-```
-
-**Curso 5: Ansible para SysAdmin — 19h**
-```
-Carga:     19h total
-Sessões:   ~10 folgas × 2h
-Quando:    S15–S18 (11/08 a 07/09)
-Distribuição sugerida (tardes de folga — manhã fica para labs):
-  S15:  Sex 15/08[F] tarde 2h  Dom 17/08[F] tarde 2h  → 4h (fundamentos, playbooks)
-  S16:  Ter 19/08[F] tarde 2h  Qui 21/08[F] tarde 2h  Sáb 23/08[F] tarde 2h  → 6h (roles, vault)
-  S17:  Seg 25/08[F] tarde 2h  Qua 27/08[F] tarde 2h  Sex 29/08[F] tarde 2h  → 6h (avançado)
-  S18:  Ter 02/09[F] tarde 2h  Qui 04/09[F] tarde 1h  → 3h (projeto final)
-Plantão:   "Ansible automates" podcast, revisão de playbooks no celular
-```
-
-**Curso 6: AWX para Sysadmin — 8h**
-```
-Carga:     8h total
-Sessões:   4 folgas × 2h (tardes)
-Quando:    S18 final + S19 (04/09 a 14/09)
-Distribuição:
-  S18:  Sáb 06/09[F] tarde 2h (instalação, conceitos, inventários)
-  S19:  Seg 08/09[F] tarde 2h (job templates, workflows)
-        Ter 09/09[F] tarde 2h (webhooks, RBAC, API)
-        Qui 11/09[F] tarde 2h (projeto: Zabbix → AWX → remediação)
-```
-
----
-
-### Fase 4 — Advanced SRE (Semanas S19–S29 | ~173h disponíveis)
-
-**Curso 4: GitHub Actions — 7h**
-```
-Carga:     7h total
-Sessões:   4 folgas × 2h (com 1h de margem)
-Quando:    S19–S20 (08/09 a 21/09)
-Distribuição (manhãs de folga):
-  S19:  Sex 12/09[F] manhã — 2h (workflows, events, runners)  ← dia par = trabalho, ajustar
-        [ATENÇÃO: 12/09 é par = TRABALHO → usar Sáb 13/09[F]]
-  S19:  Sáb 13/09[F] manhã 2h (workflows, events, runners)
-  S20:  Seg 15/09[F] manhã 2h (secrets, Docker, matrix builds)
-        Qua 17/09[F] manhã 2h (environments, reusable workflows)
-        Sex 19/09[F] manhã 1h (conclusão + lab pipeline)
-```
-
-**Curso 7: Projeto DevOps Flask API — 14h**
-```
-Carga:     14h total
-Sessões:   ~7 folgas × 2h
-Quando:    S21–S23 (22/09 a 12/10)
-Distribuição:
-  S21:  Ter 23/09[F] 4h (manhã 2h + tarde 2h) — estrutura Flask, Docker
-        Qui 25/09[F] 4h (manhã 2h + tarde 2h) — testes, CI pipeline
-        Sáb 27/09[F] 2h manhã — deploy K8s inicial
-  S22:  Seg 29/09[F] 2h manhã — observabilidade, métricas Prometheus
-        Qua 01/10[F] 2h tarde — escalabilidade, HPA
-  Total: 14h → concluído
-Plantão:   Revisar código do projeto, pensar em melhorias
-```
-
-**Curso 8: Kubernetes Completo + Projeto DevOps — 19h**
-```
-Carga:     19h total
-Sessões:   ~10 folgas × 2h
-Quando:    S23–S27 (06/10 a 09/11)
-Distribuição:
-  S23:  Qui 09/10[F] tarde 2h  Sáb 11/10[F] tarde 2h  → 4h (arquitetura, kubectl, pods)
-  S24:  Seg 13/10[F] tarde 2h  Qua 15/10[F] tarde 2h  Sex 17/10[F] tarde 2h  Dom 19/10[F] tarde 2h → 8h (services, configmaps, volumes, ingress)
-  S25:  Ter 21/10[F] tarde 2h  Qui 23/10[F] tarde 2h  → 4h (RBAC, HPA, Helm)
-  S26:  Sex 31/10[F] tarde 1h  Dom 02/11[F] tarde 2h  → 3h (projeto DevOps K8s)
-  Total: 19h → concluído
-Plantão:   KillerCoda K8s scenarios (mobile), podcast "Kubernetes Podcast"
-```
-
-**Conteúdo Gratuito Fase 4 — 9h estimadas**
-```
-Prometheus + Grafana docs:  S19–S20 → manhãs de folga junto ao CI/CD
-KillerCoda K8s:             S23–S27 → tardes + plantão (mobile-friendly)
-Google SRE Book (Monitoring, Incidents): S26–S28 → 1h/folga, leitura
-Chaos Engineering docs:     S27 → 1 folga dedicada
-```
-
----
-
-### Fase 5 — Especialização & Capstone (Semanas S28–S36 | ~107h disponíveis)
-
-```
-Capstone (projeto integrador):  S28–S31 → folgas completas (4h/dia)
-Preparação carreira:            S32–S34 → misto (manhã = prep, tarde = lab)
-Buffer + revisão final:         S35–S36 → revisão, celebração, próximo passo
-Alura Línguas (intensivo final): S28–S36 → 1 sessão 30min por folga
-CKA Prep (opcional, pós-dez):   Planejado para Jan/Fev 2027
-```
-
----
-
-## Regras de Alocação para o Claude Code Implementar
+### Regra matemática da escala
 
 ```python
-# REGRA 1: Tipo de dia
-def get_day_type(date):
-    return "FOLGA" if date.day % 2 != 0 else "TRABALHO"
+from datetime import date
 
-# REGRA 2: Horas disponíveis por tipo
-def get_available_hours(day_type):
-    return {"FOLGA": 4.0, "TRABALHO": 0.5}[day_type]
+SCALE_ANCHOR = date(2026, 8, 5)  # FOLGA
 
-# REGRA 3: Blocos de estudo em dias de folga
-FOLGA_BLOCKS = [
-    {"id": "manha", "label": "Manhã", "horas": 2, "horario": "09:00–11:00"},
-    {"id": "tarde",  "label": "Tarde",  "horas": 2, "horario": "14:00–16:00"},
-]
+def get_day_type(current_date: date) -> str:
+    days = (current_date - SCALE_ANCHOR).days
+    return "FOLGA" if days % 2 == 0 else "TRABALHO"
+```
 
-# REGRA 4: Bloco passivo em dias de trabalho
-TRAB_BLOCK = {"id": "passivo", "label": "Passivo", "horas": 0.5, "horario": "Livre"}
+Não usar regras mensais de dias pares ou ímpares.
 
-# REGRA 5: Semana vai de segunda a domingo (não seg–sex)
-# Sábado e domingo têm o mesmo peso que dias úteis na escala 12x36
+---
 
-# REGRA 6: Lab Zabbix — 1 folga por semana (preferencialmente 1ª folga da semana)
-# Usa 1h do bloco tarde. Nunca cancela.
+## 4. Estados de uma atividade
 
-# REGRA 7: Alura Línguas — dias de trabalho (20min do passivo)
-# Opcional: 1 sessão de 30min nas folgas
+A aplicação deverá aceitar:
 
-# REGRA 8: Cursos com tag "aws" → preferencialmente manhã (conteúdo denso)
-# Cursos com tag "lab" / "projeto" → preferencialmente tarde (prático)
-# Cursos com tag "book" / "free" → passivo (plantão) ou antes de dormir
+| Status | Significado |
+|---|---|
+| `pending` | ainda não iniciada |
+| `in_progress` | iniciada e não concluída |
+| `done` | concluída |
+| `deferred` | adiada e devolvida à fila |
+| `skipped` | retirada conscientemente da trilha |
+| `blocked` | depende de pré-requisito, recurso ou correção |
+| `cancelled` | removida definitivamente |
+
+### Comportamento de “não feito”
+
+“Não feito” deve ser registrado como `deferred`.
+
+A atividade:
+
+1. mantém seu ID permanente;
+2. registra o histórico do slot perdido;
+3. volta para a fila;
+4. recebe o próximo slot compatível;
+5. não altera as atividades já concluídas;
+6. não exige recalcular um prazo final fixo.
+
+---
+
+# 5. Roadmap principal
+
+## Fase 1 — Fundamentos operacionais
+
+### 1. Administração de Sistemas GNU/Linux: Fundamentos e Prática
+
+- **Plataforma:** Udemy
+- **Carga de vídeo:** 9h11
+- **Prioridade:** muito alta
+- **Execução:** integral, acelerando conteúdos já dominados
+- **Objetivo:** consolidar terminal, arquivos, permissões, usuários, processos, manipulação de texto e Shell Script.
+- **URL:** https://www.udemy.com/course/adm-so-gnulinux/
+
+Conteúdo prioritário:
+
+- pipes e redirecionamentos;
+- `grep`, `awk`, `sed` e expressões regulares;
+- usuários, grupos, `sudoers` e permissões;
+- processos;
+- Shell Script;
+- inventário do sistema.
+
+Complementos necessários:
+
+- systemd e journald;
+- performance;
+- armazenamento;
+- redes;
+- troubleshooting.
+
+Projeto:
+
+```text
+linux-sre-toolkit/
+├── check_cpu.sh
+├── check_memory.sh
+├── check_disk.sh
+├── check_process.sh
+├── check_port.sh
+├── analyze_log.sh
+└── README.md
 ```
 
 ---
 
-## Dados para Persistência no Banco (curriculum.py)
+### 2. Fundamentos de Redes para DevOps
 
-O Claude Code deve usar este arquivo para popular `data/curriculum.py` com os dados exatos. Cada lição do `painel_sre_v2.html` deve receber, além dos campos já existentes (`name`, `h`, `tag`), dois campos novos:
+- **Situação:** curso ainda não adquirido
+- **Prioridade de compra:** alta
+- **Objetivo:** TCP/IP, DNS, HTTP/HTTPS, TLS, roteamento, NAT, sockets e troubleshooting.
+- **Ferramentas esperadas:** `ip`, `ss`, `dig`, `curl`, `mtr`, `tcpdump`, `nc`, `openssl`.
+
+Este é o principal conteúdo ainda ausente na coleção atual.
+
+Projeto:
+
+- diagnosticar DNS, HTTP, TLS e conectividade;
+- produzir um runbook de troubleshooting de rede;
+- capturar e interpretar tráfego básico com `tcpdump`.
+
+---
+
+### 3. Git e GitHub
+
+- **Situação:** usar recursos gratuitos inicialmente
+- **Prioridade:** alta
+- **Recursos:**
+  - GitHub Skills;
+  - Learn Git Branching;
+  - Pro Git, capítulos iniciais.
+
+Conteúdo mínimo:
+
+- commits;
+- branches;
+- merge e rebase;
+- resolução de conflitos;
+- pull requests;
+- tags;
+- `.gitignore`;
+- revisão de código;
+- commits claros.
+
+Comprar um curso específico apenas se houver dificuldade prática persistente.
+
+---
+
+### 4. Introdução a Bancos de Dados e Linguagem SQL
+
+- **Plataforma:** Udemy
+- **Carga de vídeo:** 1h58
+- **Prioridade:** média
+- **Execução:** integral
+- **URL:** https://www.udemy.com/course/introducao-a-bancos-de-dados-e-linguagem-sql/
+
+Objetivo:
+
+- compreender banco relacional;
+- criar tabelas;
+- inserir e consultar dados;
+- usar filtros e `JOIN`;
+- apoiar automações e troubleshooting.
+
+Projeto:
+
+```text
+incident-database/
+├── schema.sql
+├── seed.sql
+├── queries.sql
+└── README.md
+```
+
+Tabelas sugeridas:
+
+- serviços;
+- incidentes;
+- alertas;
+- equipes.
+
+---
+
+### 5. Python para DevOps
+
+- **Plataforma:** Udemy
+- **Carga de vídeo:** 7h18
+- **Prioridade:** alta
+- **Execução:** integral, retomando projetos conforme os pré-requisitos
+- **URL:** https://www.udemy.com/course/python-para-devops/
+
+Conteúdo principal:
+
+- fundamentos de Python;
+- funções e tratamento de erros;
+- type hints;
+- YAML;
+- logging;
+- CLI;
+- Kubernetes Python SDK;
+- FastAPI;
+- roteamento de alertas.
+
+Complementos:
+
+- `pytest`;
+- mocks;
+- `requests`/`httpx`;
+- retries, timeout e backoff;
+- empacotamento;
+- Boto3;
+- métricas da própria automação.
+
+Projeto principal:
+
+```text
+alert-router/
+Zabbix ou Alertmanager
+→ FastAPI
+→ classificação
+→ Telegram, e-mail ou Discord
+→ logs estruturados
+→ métricas Prometheus
+```
+
+---
+
+## Fase 2 — Containers, cloud e infraestrutura como código
+
+### 6. Docker
+
+- **Situação:** curso dedicado ainda não adquirido
+- **Prioridade de compra:** alta
+- **Objetivo:** imagens, containers, Dockerfiles, volumes, redes, Compose, segurança e troubleshooting.
+
+Os cursos integradores existentes usam Docker, mas não substituem uma formação estruturada.
+
+Projeto:
+
+- containerizar uma API;
+- criar ambiente com Docker Compose;
+- usar volumes e redes;
+- implementar health check;
+- reduzir tamanho e superfície de ataque da imagem.
+
+---
+
+### 7. AWS re/Start — Campinho Digital
+
+- **Situação:** em andamento
+- **Tipo:** trilha paralela obrigatória
+- **Horário:** aulas 19h00–20h20 e módulos no Canvas
+- **Objetivo:** fundamentos operacionais de AWS e preparação para a trilha de cloud.
+
+Regras:
+
+- contabilizar a carga do re/Start dentro do estudo total;
+- não acumular Canvas, roadmap e Google Skills na mesma noite;
+- tarefas obrigatórias têm prioridade sobre revisões opcionais.
+
+---
+
+### 8. Preparatório AWS Cloud Practitioner CLF-C02
+
+- **Plataforma:** Cloud Basics Academy
+- **Carga:** 11h24
+- **Prioridade:** baixa
+- **Execução:** seletiva
+- **URL:** https://cloudbasics.academy/plataforma/cursos/2732
+
+Uso recomendado:
+
+- nivelamento;
+- infraestrutura global;
+- responsabilidade compartilhada;
+- IAM;
+- custos;
+- CloudWatch, CloudTrail e AWS Config.
+
+Não é necessário realizar a certificação CLF-C02 antes da SAA-C03.
+
+Carga sugerida: 6 a 8 horas.
+
+---
+
+### 9. AWS Solutions Architect Associate SAA-C03
+
+- **Plataforma:** Udemy
+- **Carga de vídeo:** 30h31
+- **Prioridade:** muito alta
+- **Execução:** integral
+- **URL:** https://www.udemy.com/course/certificacao-amazon-aws-2019-solutions-architect/
+
+Objetivo:
+
+- arquitetura segura;
+- resiliência;
+- desempenho;
+- custos;
+- IAM;
+- VPC;
+- EC2;
+- S3;
+- bancos;
+- alta disponibilidade;
+- disaster recovery.
+
+A certificação é recomendada após laboratórios e simulados.
+
+Projetos:
+
+1. aplicação web altamente disponível;
+2. VPC com subnets públicas e privadas;
+3. arquitetura com RTO e RPO documentados;
+4. infraestrutura recriada posteriormente com Terraform.
+
+Controle obrigatório:
+
+- budgets;
+- alertas;
+- destruição dos recursos;
+- conferência de EBS, IPs e load balancers.
+
+---
+
+### 10. Terraform Essentials
+
+- **Plataforma:** LinuxTips
+- **Carga:** mais de 5 horas
+- **Prioridade:** alta
+- **Execução:** integral
+- **URL:** https://linuxtips.io/treinamento/terraform-essentials/
+
+Conteúdo:
+
+- HCL;
+- providers;
+- recursos;
+- variáveis;
+- state;
+- backend;
+- módulos;
+- workspaces;
+- importação;
+- dados sensíveis.
+
+Complementos:
+
+- outputs, locals e data sources;
+- `for_each`;
+- lifecycle;
+- locking;
+- múltiplos ambientes;
+- `terraform test`;
+- segurança;
+- CI/CD;
+- drift.
+
+Projeto:
+
+```text
+terraform-aws-lab/
+├── modules/
+├── environments/
+├── backend/
+└── README.md
+```
+
+---
+
+### 11. Ansible para SysAdmin
+
+- **Plataforma:** Udemy
+- **Carga de vídeo:** 18h56
+- **Prioridade:** alta
+- **Execução:** integral
+- **URL:** https://www.udemy.com/course/ansible-para-sysadmin/
+
+Conteúdo:
+
+- inventários;
+- playbooks;
+- variables;
+- handlers;
+- conditions;
+- loops;
+- templates;
+- roles;
+- Galaxy;
+- Collections;
+- Vault;
+- Linux e Windows;
+- inventário dinâmico AWS.
+
+Complementos:
+
+- `ansible-lint`;
+- Molecule;
+- CI/CD;
+- observabilidade;
+- rollback;
+- AWX.
+
+Projeto:
+
+- configurar VMs Linux;
+- instalar Docker, Nginx e Zabbix Agent;
+- separar ambientes;
+- validar idempotência;
+- usar Ansible Vault.
+
+---
+
+## Fase 3 — CI/CD e orquestração
+
+### 12. GitHub Actions: Guia Completo — Do Zero ao Deploy
+
+- **Plataforma:** Udemy
+- **Carga:** 7h07
+- **Prioridade:** alta
+- **Execução:** integral, dividida por pré-requisitos
+- **URL:** https://www.udemy.com/course/github-actions-guia-completo-do-zero-ao-deploy/
+
+Conteúdo:
+
+- workflows;
+- jobs e steps;
+- triggers;
+- conditions;
+- contexts;
+- secrets;
+- environments;
+- matrix;
+- Python;
+- Docker;
+- Terraform;
+- Kubernetes.
+
+Complementos:
+
+- reusable workflows;
+- composite actions;
+- cache;
+- artifacts;
+- concurrency;
+- self-hosted runners;
+- OIDC;
+- proteção de produção.
+
+Projeto:
+
+```text
+pull request
+→ lint
+→ testes
+→ análise de segurança
+→ build
+→ scan
+→ push
+→ deploy em homologação
+→ aprovação
+→ produção
+```
+
+---
+
+### 13. Kubernetes Completo: Orquestração Docker + Projeto DevOps
+
+- **Plataforma:** Udemy
+- **Carga:** 18h51
+- **Prioridade:** muito alta
+- **Execução:** integral
+- **URL:** https://www.udemy.com/course/kubernetes-power-profissional-formacao-inicial-completa/
+
+Conteúdo:
+
+- arquitetura;
+- Pods;
+- ReplicaSets;
+- Deployments;
+- Services;
+- Namespaces;
+- probes;
+- requests e limits;
+- volumes;
+- DaemonSets;
+- Jobs;
+- CronJobs;
+- ConfigMaps;
+- Secrets;
+- StatefulSets;
+- EndpointSlices;
+- RBAC.
+
+Complementos:
+
+- Readiness e Startup Probes;
+- Ingress;
+- HPA;
+- NetworkPolicy;
+- StorageClass;
+- PodDisruptionBudget;
+- affinity;
+- taints e tolerations;
+- Helm;
+- troubleshooting;
+- observabilidade;
+- GitOps.
+
+Projeto:
+
+- aplicação com múltiplos workloads;
+- probes;
+- limites;
+- persistência;
+- RBAC;
+- simulação de falhas;
+- runbook.
+
+---
+
+### 14. Projeto DevOps: Flask API — Do Código ao Deploy
+
+- **Plataforma:** Udemy
+- **Carga:** 14h08
+- **Prioridade:** muito alta
+- **Tipo:** projeto integrador principal
+- **Execução:** integral em duas etapas
+- **URL:** https://www.udemy.com/course/projeto-devops-flask-api-do-codigo-ao-deploy/
+
+Abrange:
+
+- Flask;
+- MongoDB;
+- Pytest;
+- Docker;
+- Docker Compose;
+- Makefile;
+- lint e segurança;
+- GitHub Actions;
+- Kind;
+- Kubernetes;
+- Helm;
+- Sealed Secrets;
+- Terraform;
+- EKS e ECR;
+- Route 53;
+- TLS;
+- OIDC;
+- RBAC.
+
+Etapa A:
+
+- código;
+- testes;
+- Docker;
+- CI.
+
+Etapa B:
+
+- Terraform;
+- Kubernetes;
+- Helm;
+- EKS;
+- DNS;
+- TLS;
+- CD.
+
+Expansão SRE obrigatória:
+
+- métricas RED;
+- logs estruturados;
+- tracing;
+- dashboard;
+- SLO;
+- burn rate;
+- alerta;
+- runbook;
+- post-mortem.
+
+---
+
+## Fase 4 — Observabilidade e práticas de SRE
+
+### 15. Monitoramento de Aplicações com Prometheus e Grafana
+
+- **Plataforma:** Udemy
+- **Carga:** 5h37
+- **Prioridade:** alta
+- **Execução:** integral, acelerando Grafana básico
+- **URL:** https://www.udemy.com/course/monitorando-aplicacoes-com-prometheus-e-grafana/
+
+Conteúdo:
+
+- arquitetura do Prometheus;
+- pull model;
+- Counter, Gauge, Histogram e Summary;
+- instrumentação Node.js;
+- scraping;
+- PromQL;
+- dashboards;
+- alertas iniciais.
+
+Complementos obrigatórios:
+
+- Alertmanager;
+- recording rules;
+- service discovery;
+- relabeling;
+- cardinalidade;
+- Node Exporter;
+- Blackbox Exporter;
+- kube-state-metrics;
+- SLO e burn rate;
+- Grafana Alerting atual.
+
+Projeto:
+
+```text
+prometheus-sre-lab/
+├── application/
+├── prometheus/
+├── alertmanager/
+├── grafana/
+├── load-test/
+└── docs/
+```
+
+---
+
+### 16. OpenTelemetry, logs e traces
+
+- **Situação:** formação estruturada ainda ausente
+- **Prioridade de compra:** futura
+- **Momento:** após Docker, Kubernetes e Prometheus
+- **Objetivo:** métricas, logs e traces correlacionados.
+
+Conteúdo necessário:
+
+- OpenTelemetry SDK;
+- Collector;
+- instrumentação automática e manual;
+- propagação de contexto;
+- sampling;
+- cardinalidade;
+- Loki;
+- Tempo ou Jaeger;
+- Grafana;
+- Kubernetes.
+
+Não comprar antes de concluir Prometheus e Kubernetes.
+
+---
+
+### 17. Práticas formais de SRE
+
+- **Fonte principal:** Google SRE Book e Site Reliability Workbook
+- **Prioridade:** muito alta
+- **Tipo:** leitura e aplicação contínua
+- **URLs:**
+  - https://sre.google/sre-book/table-of-contents/
+  - https://sre.google/workbook/table-of-contents/
+
+Conteúdo:
+
+- SLI;
+- SLO;
+- SLA;
+- error budget;
+- burn rate;
+- toil;
+- alertas acionáveis;
+- capacidade;
+- on-call;
+- incident response;
+- runbooks;
+- post-mortems;
+- simplicidade;
+- gestão de risco.
+
+Entregáveis:
+
+- SLO de disponibilidade;
+- SLO de latência;
+- política de error budget;
+- alerta multiwindow;
+- runbook;
+- exercício de incidente;
+- post-mortem sem culpabilização.
+
+---
+
+## Fase 5 — Especializações
+
+### 18. Curso de Zabbix 7 — Completo e atualizado
+
+- **Plataforma:** Udemy
+- **Carga:** 30h12
+- **Prioridade:** média
+- **Execução:** seletiva
+- **URL:** https://www.udemy.com/course/curso-de-zabbix/
+
+Priorizar:
+
+- alta disponibilidade;
+- PostgreSQL e TimescaleDB;
+- LLD;
+- Proxy;
+- segurança;
+- AD e 2FA;
+- API;
+- triggers avançadas;
+- SLA;
+- ODBC;
+- SNMP;
+- integração Grafana.
+
+Acelerar fundamentos já dominados.
+
+Projeto:
+
+```text
+zabbix-platform-lab/
+├── docker/
+├── ansible/
+├── templates/
+├── api/
+├── grafana/
+└── docs/
+```
+
+---
+
+### 19. AWX para SysAdmin
+
+- **Plataforma:** Udemy
+- **Carga:** 7h48
+- **Prioridade:** média
+- **Pré-requisitos:** Ansible e Kubernetes básico
+- **URL:** https://www.udemy.com/course/awx-para-sysadmin/
+
+Conteúdo:
+
+- AWX Operator;
+- organizações;
+- usuários e times;
+- RBAC;
+- LDAP;
+- projetos Git;
+- inventários;
+- credenciais;
+- Job Templates;
+- Surveys;
+- Workflows;
+- aprovações;
+- agendamentos.
+
+Projeto:
+
+- instalação de Zabbix Agent;
+- workflow com aprovação;
+- inventários separados;
+- notificações;
+- RBAC;
+- backup e recuperação documentados.
+
+---
+
+### 20. DevOps: Automação sem Enrolação
+
+- **Plataforma:** Udemy
+- **Carga:** 14h35
+- **Prioridade:** média
+- **Execução:** seletiva
+- **URL:** https://www.udemy.com/course/devops-automacao-sem-enrolacao/
+
+Priorizar:
+
+- AWS CLI;
+- Azure CLI;
+- `jq`;
+- pipeline Terraform + Ansible + GitHub Actions;
+- AKS;
+- HPA;
+- Ingress;
+- KEDA;
+- troubleshooting;
+- Datadog.
+
+Pular ou acelerar fundamentos já cobertos.
+
+Este curso substitui o uso do curso curto “SRE DevOps: Jornada do início ao fim” como integrador.
+
+---
+
+### 21. SRE DevOps: Jornada do Início ao Fim
+
+- **Plataforma:** Udemy
+- **Carga:** 4h02
+- **Prioridade:** baixa
+- **Execução:** opcional e panorâmica
+- **URL:** https://www.udemy.com/course/jornada-devops-sre-do-inicio-ao-fim/
+
+Pode ser usado apenas para visão arquitetural.
+
+Não utilizar como fonte principal de:
+
+- Terraform;
+- Kubernetes;
+- observabilidade;
+- SRE;
+- GitOps;
+- segurança.
+
+---
+
+### 22. DevOps Agêntico: Sem Enrolação
+
+- **Plataforma:** Udemy
+- **Carga:** 4h59
+- **Prioridade:** média/baixa
+- **Momento:** final da trilha
+- **URL:** https://www.udemy.com/course/devops-agentico-sem-enrolacao/
+
+Objetivo:
+
+- IA aplicada a operações;
+- análise de incidentes;
+- geração de código e PRs;
+- uso controlado de ferramentas;
+- automação assistida.
+
+Regra de maturidade:
+
+```text
+somente leitura
+→ recomendações
+→ geração de código ou PR
+→ execução em laboratório
+→ aprovação humana
+→ automação limitada e auditada
+```
+
+Projeto:
+
+```text
+agentic-sre-assistant/
+Alerta
+→ coleta de contexto
+→ análise
+→ sugestão
+→ aprovação humana
+→ registro de auditoria
+```
+
+---
+
+# 6. Programa Google Cloud
+
+## Professional Cloud DevOps Engineer — Google Skills
+
+- **Programa:** https://www.skills.google/paths/20
+- **Benefícios disponíveis:**
+  - 30 créditos mensais no Google Skills;
+  - US$ 10 mensais para Google Cloud.
+- **Prioridade:** paralela, controlada
+- **Frequência:** a cada quarta folga, substituir dois blocos do roadmap por Google Skills.
+
+Objetivos:
+
+- CI/CD;
+- SRE;
+- observabilidade;
+- troubleshooting;
+- performance;
+- custos;
+- operação no Google Cloud.
+
+Regras:
+
+- não adicionar como terceira trilha diária;
+- usar créditos somente em labs alinhados ao módulo atual;
+- excluir recursos após o laboratório;
+- registrar créditos consumidos;
+- não ter pressa para realizar a certificação profissional.
+
+---
+
+# 7. Recursos gratuitos
+
+| Recurso | Aplicação |
+|---|---|
+| GitHub Skills | Git e GitHub |
+| Learn Git Branching | branches e merge |
+| Pro Git | referência |
+| Linux Journey | revisão Linux |
+| OverTheWire Bandit | terminal e segurança |
+| The Linux Command Line | leitura |
+| SQLBolt | SQL |
+| Automate the Boring Stuff | Python |
+| KillerCoda | Kubernetes |
+| Prometheus Docs | métricas e PromQL |
+| Grafana Tutorials | dashboards |
+| Google SRE Book | princípios |
+| Site Reliability Workbook | implementação |
+| Google Cloud Skills | cloud e SRE |
+
+Conteúdo gratuito deve ser usado para reforçar lacunas, não para criar múltiplas trilhas simultâneas.
+
+---
+
+# 8. Projetos de portfólio
+
+## Projeto 1 — Linux, Ansible e Zabbix
+
+Objetivo:
+
+- administrar Linux;
+- automatizar configuração;
+- instalar Zabbix Agent;
+- criar template e LLD;
+- versionar scripts;
+- documentar troubleshooting.
+
+## Projeto 2 — Flask API em AWS e Kubernetes
+
+Objetivo:
+
+- código;
+- testes;
+- Docker;
+- CI/CD;
+- Terraform;
+- AWS;
+- Kubernetes;
+- Helm;
+- DNS;
+- TLS;
+- segurança.
+
+## Projeto 3 — Observabilidade e confiabilidade
+
+Objetivo:
+
+- Prometheus;
+- Grafana;
+- Loki;
+- Tempo;
+- OpenTelemetry;
+- SLI;
+- SLO;
+- error budget;
+- alerta;
+- runbook;
+- incidente;
+- post-mortem.
+
+## Projeto 4 — Automação agêntica controlada
+
+Objetivo:
+
+- receber alerta;
+- coletar contexto autorizado;
+- sugerir diagnóstico;
+- localizar runbook;
+- exigir aprovação;
+- registrar auditoria.
+
+---
+
+# 9. Priorização resumida
+
+## Obrigatórios
+
+1. GNU/Linux.
+2. Redes.
+3. Git/GitHub.
+4. SQL básico.
+5. Python para DevOps.
+6. Docker.
+7. AWS re/Start.
+8. AWS SAA-C03.
+9. Terraform.
+10. Ansible.
+11. GitHub Actions.
+12. Kubernetes.
+13. Projeto Flask.
+14. Prometheus e Grafana.
+15. OpenTelemetry.
+16. Práticas formais de SRE.
+
+## Seletivos
+
+- Cloud Practitioner;
+- Zabbix 7;
+- DevOps Automação sem Enrolação;
+- curso curto Jornada SRE/DevOps.
+
+## Especializações
+
+- AWX;
+- Google Professional Cloud DevOps Engineer;
+- DevOps Agêntico.
+
+---
+
+# 10. Compras recomendadas
+
+## Comprar quando for iniciar a fase
+
+1. **Fundamentos de Redes para DevOps**
+2. **Curso dedicado de Docker**
+
+## Comprar futuramente
+
+3. **OpenTelemetry e observabilidade completa**, apenas depois de Kubernetes e Prometheus.
+
+## Não comprar agora
+
+- outro curso de AWS;
+- outro curso básico de Kubernetes;
+- outro curso de GitHub Actions;
+- outro curso de Ansible;
+- outro curso de Terraform;
+- curso adicional de Zabbix;
+- curso de Helm antes de validar a necessidade.
+
+A coleção atual já é suficiente para vários meses de estudo consolidado.
+
+---
+
+# 11. Campos esperados pela aplicação
+
+Cada curso:
 
 ```python
 {
-    "name": "...",
-    "h": 2,
-    "tag": None,  # None | "lab" | "free" | "book" | "aws"
-    "block": "manha",   # "manha" | "tarde" | "passivo"
-    "type": "aula"      # "aula" | "lab" | "leitura" | "projeto" | "revisao"
+    "id": "linux-admin",
+    "name": "Administração de Sistemas GNU/Linux",
+    "provider": "Udemy",
+    "url": "https://...",
+    "video_hours": 9.18,
+    "priority": "very_high",
+    "execution": "full",
+    "phase": 1,
+    "status": "available",
+    "prerequisites": [],
 }
 ```
 
-**Mapeamento tag → block padrão:**
-- `tag: None` (aula normal) → `block: "manha"` se teórico, `"tarde"` se prático
-- `tag: "aws"` → `block: "manha"` (conteúdo denso, mente fresca)
-- `tag: "lab"` → `block: "tarde"` (prático, após teoria da manhã)
-- `tag: "book"` → `block: "passivo"` (leitura, não requer computador)
-- `tag: "free"` → depende do conteúdo (interativo = tarde, leitura = passivo)
+Cada atividade:
+
+```python
+{
+    "id": "linux-admin-sec03-lesson01",
+    "course_id": "linux-admin",
+    "sequence": 1,
+    "name": "Pipes e redirecionamentos",
+    "duration_minutes": 30,
+    "activity_type": "lesson",
+    "preferred_day_type": "ANY",
+    "preferred_slot": "THEORY",
+    "prerequisites": [],
+}
+```
+
+Os IDs não podem conter datas.
 
 ---
 
-## Estatísticas Finais (para validação)
+# 12. O que não deve voltar para este arquivo
 
-```
-Total cursos pagos:          11 cursos
-Total horas pagas:           123h
-Total conteúdo gratuito:     ~45h estimadas
-Total horas de conteúdo:     ~168h
+Não incluir novamente:
 
-Total dias de folga:         125 dias  →  500h de estudo focado
-Total dias de trabalho:      100 dias  →   50h de estudo passivo
-Total horas disponíveis:     550h
+- calendário mensal fixo;
+- datas de cada aula;
+- semanas S01–S36;
+- prazo final rígido;
+- regra de dia par ou ímpar por mês;
+- IDs baseados em datas;
+- cálculo de conclusão definitiva;
+- reagendamento manual de todas as atividades;
+- 30 labs obrigatórios presos a semanas.
 
-Margem para labs e projetos: 550 - 168 = 382h  (69% do tempo = prática)
-
-Tipo de semana A (4 folgas): 19 semanas  →  17.5h/semana
-Tipo de semana B (3 folgas): 15 semanas  →  14.0h/semana
-Semanas parciais:             2 semanas  →  média 8.75h
-
-Período total:               36 semanas (09/05 a 16/01/2027)
-```
+Essas informações devem ser produzidas dinamicamente pela aplicação.
 
 ---
 
-*Gerado em: Maio 2026*
-*Escala validada matematicamente: dias pares = trabalho, dias ímpares = folga*
-*Base: `painel_sre_v2.html` + `cronograma_sre_robson.md` + cálculo Python da escala real*
+*Versão 3.0 — 05/08/2026*  
+*Catálogo dinâmico para a escala 12x36*  
+*Objetivo: conhecimento consolidado, projetos verificáveis e transição sustentável para SRE/DevOps.*

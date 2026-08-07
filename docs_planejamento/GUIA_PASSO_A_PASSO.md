@@ -1,5 +1,8 @@
 # 📖 GUIA PASSO-A-PASSO: Atualizar Painel SRE
 
+> **DOCUMENTO HISTÓRICO:** estas instruções pertencem à migração antiga para 36
+> semanas e não devem ser executadas na arquitetura dinâmica atual.
+
 ## Visão Geral
 
 Você vai atualizar seu repositório `painel-estudos-sre` de 31 para 36 semanas, integrando:

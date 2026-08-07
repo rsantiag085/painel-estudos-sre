@@ -1,4 +1,7 @@
 # CRONOGRAMA FINAL SRE — Robson Santiago
+
+> **DOCUMENTO HISTÓRICO:** plano original preservado como referência pedagógica.
+> A alocação vigente é dinâmica e usa a escala 12x36 a partir de 05/08/2026.
 **NOC Sênior → SRE | Mai–Dez 2026 | 36 Semanas | Escala 12x36**
 
 > **Referência:** SRE Roadmap for Beginners (Medium, Fev/2026)

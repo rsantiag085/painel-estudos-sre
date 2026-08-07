@@ -1,5 +1,9 @@
 # 📌 LEIA PRIMEIRO — Seu Cronograma SRE Está Pronto!
 
+> **DOCUMENTO HISTÓRICO:** este material descreve o cronograma rígido anterior.
+> A implementação vigente usa agenda dinâmica 12x36, sem prazo final, conforme
+> `README.md`, `MANUAL_PROJETO_SRE.md` e `data/curriculum.py`.
+
 Olá **Robson**! 👋
 
 Você tem aqui **TUDO** que precisa para se transformar de NOC Sênior em SRE Engineer em 36 semanas (mai–dez 2026).

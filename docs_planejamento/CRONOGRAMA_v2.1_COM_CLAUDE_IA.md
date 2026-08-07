@@ -1,4 +1,7 @@
 # CRONOGRAMA SRE v2.0 — COM INTEGRAÇÃO CLAUDE + IA
+
+> **DOCUMENTO HISTÓRICO:** datas, semanas e prazos abaixo não controlam mais a
+> aplicação. Consulte a documentação principal para a agenda dinâmica 12x36.
 **Robson Santiago | NOC Sênior → SRE Mid-Level**
 **INÍCIO: 02/06/2026 (IMUTÁVEL) | FIM ESTIMADO: ~Fev/2027 | 36 semanas**
 

@@ -1,5 +1,8 @@
 # PROMPT: Atualizar Painel SRE com Novo Cronograma (36 semanas)
 
+> **DOCUMENTO HISTÓRICO:** prompt preservado para referência. Ele foi substituído
+> pela agenda dinâmica baseada em cursos, atividades permanentes e slots 12x36.
+
 ## 📋 CONTEXTO
 
 Robson Santiago está atualizando seu cronograma de estudos SRE de **31 semanas (antigo)** para **36 semanas (novo — mai–dez 2026)**.
@@ -509,4 +512,3 @@ Se encontrar dúvidas durante implementação:
 **Status:** ✅ Pronto para implementar
 **Data:** Maio 2026
 **Versão Final:** v2.0.0 (36 semanas + 30 labs Zabbix)
-
