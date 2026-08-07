@@ -17,6 +17,7 @@ from schemas import (
     ScheduleRangeResponse,
 )
 from services.scale_service import day_type_for, generate_slots
+from services.settings_service import get_settings
 from services.scheduling_service import (
     SchedulingConflict,
     SchedulingError,
@@ -28,7 +29,7 @@ from services.scheduling_service import (
 router = APIRouter(prefix="/api/schedule", tags=["schedule"])
 
 
-def _schedule_days(slots, start_date, end_date):
+def _schedule_days(slots, start_date, end_date, settings):
     grouped = defaultdict(list)
     for slot in slots:
         grouped[slot.study_date].append(slot_view(slot))
@@ -38,7 +39,9 @@ def _schedule_days(slots, start_date, end_date):
     while current <= end_date:
         days.append({
             "date": current,
-            "day_type": day_type_for(current),
+            "day_type": day_type_for(
+                current, settings["anchor_date"], settings["anchor_day_type"]
+            ),
             "slots": grouped[current],
         })
         current += timedelta(days=1)
@@ -80,7 +83,7 @@ async def get_today(
     db: Session = Depends(get_db),
 ):
     slots = _slots_in_range(db, on_date, on_date)
-    return _schedule_days(slots, on_date, on_date)[0]
+    return _schedule_days(slots, on_date, on_date, get_settings(db))[0]
 
 
 @router.get("/range", response_model=ScheduleRangeResponse)
@@ -95,7 +98,7 @@ async def get_schedule_range(
     return {
         "start_date": start_date,
         "end_date": end_date,
-        "days": _schedule_days(slots, start_date, end_date),
+        "days": _schedule_days(slots, start_date, end_date, get_settings(db)),
     }
 
 

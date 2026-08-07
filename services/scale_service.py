@@ -10,8 +10,9 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from data.curriculum import SCALE_ANCHOR, get_day_type, get_slots_for_day
+from data.curriculum import FOLGA_SLOTS, SCALE_ANCHOR, TRABALHO_SLOTS
 from models import StudySlot
+from services.settings_service import get_settings
 
 
 @dataclass(frozen=True)
@@ -34,20 +35,31 @@ def normalize_date(value: date | str) -> date:
     return date.fromisoformat(value)
 
 
-def day_type_for(value: date | str) -> str:
+def day_type_for(
+    value: date | str,
+    anchor_date: date = SCALE_ANCHOR,
+    anchor_day_type: str = "FOLGA",
+) -> str:
     """Retorna FOLGA/TRABALHO em relação à âncora configurada."""
     current_date = normalize_date(value)
-    elapsed_days = (current_date - SCALE_ANCHOR).days
-    return "FOLGA" if elapsed_days % 2 == 0 else "TRABALHO"
+    elapsed_days = (current_date - anchor_date).days
+    same_type = elapsed_days % 2 == 0
+    if same_type:
+        return anchor_day_type
+    return "TRABALHO" if anchor_day_type == "FOLGA" else "FOLGA"
 
 
-def slot_definitions_for(value: date | str) -> list[dict[str, object]]:
+def slot_definitions_for(
+    value: date | str,
+    anchor_date: date = SCALE_ANCHOR,
+    anchor_day_type: str = "FOLGA",
+) -> list[dict[str, object]]:
     """Retorna somente os quatro/dois slots obrigatórios do dia."""
     current_date = normalize_date(value)
-    # Impede divergência silenciosa entre o serviço e a fonte do currículo.
-    if day_type_for(current_date) != get_day_type(current_date):
-        raise RuntimeError("Regra da escala divergiu de data.curriculum")
-    return get_slots_for_day(current_date, include_optional=False)
+    slots = FOLGA_SLOTS if day_type_for(
+        current_date, anchor_date, anchor_day_type
+    ) == "FOLGA" else TRABALHO_SLOTS
+    return [dict(slot) for slot in slots]
 
 
 def _dates_between(start_date: date, end_date: date):
@@ -72,10 +84,20 @@ def generate_slots(
     if end < start:
         raise ValueError("end_date deve ser igual ou posterior a start_date")
 
+    settings = get_settings(session)
+    if settings["configured"] and start < settings["start_date"]:
+        raise ValueError(
+            f"O cronograma inicia em {settings['start_date'].strftime('%d/%m/%Y')}"
+        )
+
     desired: list[dict[str, object]] = []
     for current_date in _dates_between(start, end):
-        day_type = day_type_for(current_date)
-        for definition in slot_definitions_for(current_date):
+        day_type = day_type_for(
+            current_date, settings["anchor_date"], settings["anchor_day_type"]
+        )
+        for definition in slot_definitions_for(
+            current_date, settings["anchor_date"], settings["anchor_day_type"]
+        ):
             slot_code = str(definition["code"])
             desired.append(
                 {

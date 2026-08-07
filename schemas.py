@@ -143,6 +143,17 @@ class AppSettingResponse(AppSettingBase, ORMResponse):
     updated_at: datetime
 
 
+class UserSettingsRequest(BaseModel):
+    display_name: str = Field(min_length=1, max_length=80)
+    start_date: date
+    anchor_date: date
+    anchor_day_type: Literal["FOLGA", "TRABALHO"]
+
+
+class UserSettingsResponse(UserSettingsRequest):
+    configured: bool
+
+
 # ── API dinâmica ─────────────────────────────────────────────────────────────
 
 

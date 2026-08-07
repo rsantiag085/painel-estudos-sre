@@ -45,6 +45,20 @@ Linux e redes
 
 O Zabbix permanece como diferencial técnico, integrado aos projetos e laboratórios.
 
+## Primeiro acesso
+
+Cada instalação mantém seu próprio perfil, agenda e progresso no banco local.
+No primeiro acesso, o painel solicita:
+
+- nome de exibição;
+- data em que os estudos devem começar;
+- uma data conhecida da escala 12x36;
+- se essa data conhecida corresponde a `FOLGA` ou `TRABALHO`.
+
+Depois da configuração inicial, os dados podem ser consultados ou ajustados pelo
+botão **Configurar**. A lista de cursos faz parte do projeto e é compartilhada;
+os dados pessoais ficam somente no banco local, que é ignorado pelo Git.
+
 ---
 
 ## Princípios do cronograma
@@ -90,8 +104,9 @@ Cada curso deve gerar pelo menos um resultado concreto:
 
 ## Escala 12x36
 
-A escala é calculada pela sequência de dias corridos. Copie `.env.example`
-para `.env` e informe uma data da sua própria escala que corresponda a uma folga.
+A escala é calculada pela sequência de dias corridos. O formulário do primeiro
+acesso é a forma recomendada de configurá-la. `SCALE_ANCHOR_DATE` continua
+disponível como valor inicial para instalações automatizadas.
 
 ```python
 from datetime import date

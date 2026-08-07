@@ -94,6 +94,39 @@ def test_schedule_today_canonical_route_without_date_parameter(api_client):
     assert api_client.get("/api/api/schedule/today").status_code == 404
 
 
+def test_settings_onboarding_personalizes_scale_and_start_date(api_client):
+    defaults = api_client.get("/api/settings")
+    assert defaults.status_code == 200
+    assert defaults.json()["configured"] is False
+
+    saved = api_client.request(
+        "PUT",
+        "/api/settings",
+        json={
+            "display_name": "Maria",
+            "start_date": "2031-02-10",
+            "anchor_date": "2031-02-10",
+            "anchor_day_type": "TRABALHO",
+        },
+    )
+    assert saved.status_code == 200
+    assert saved.json()["display_name"] == "Maria"
+    assert saved.json()["configured"] is True
+
+    too_early = generate(api_client, start="2031-02-09", end="2031-02-09")
+    assert too_early.status_code == 409
+    assert "10/02/2031" in too_early.json()["detail"]
+
+    generated = generate(api_client, start="2031-02-10", end="2031-02-11")
+    assert generated.status_code == 200
+    first = api_client.get("/api/schedule/today", params={"date": "2031-02-10"})
+    second = api_client.get("/api/schedule/today", params={"date": "2031-02-11"})
+    assert first.json()["day_type"] == "TRABALHO"
+    assert len(first.json()["slots"]) == 2
+    assert second.json()["day_type"] == "FOLGA"
+    assert len(second.json()["slots"]) == 4
+
+
 def test_allocate_start_complete_and_history_api(api_client):
     generate(api_client)
     allocated = api_client.post(

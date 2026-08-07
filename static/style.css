@@ -2378,6 +2378,13 @@ button.nav-item.active { border-left-color: var(--cyan); }
 .empty-state.good { color: var(--green); }
 .error-panel { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 22px; background: var(--red-bg); border: 1px solid rgba(255,69,96,.4); border-radius: 7px; }
 .error-panel span { color: var(--muted); font: 10px var(--font-mono); }
+.header-actions { display: flex; gap: 8px; }
+.settings-modal { max-width: 620px; }
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+.settings-grid label { color: var(--muted); font: 700 9px var(--font-mono); letter-spacing: .4px; text-transform: uppercase; }
+.settings-grid input, .settings-grid select { width: 100%; margin-top: 7px; padding: 11px; color: var(--text); background: var(--surface2); border: 1px solid var(--border2); border-radius: 5px; font: 11px var(--font-mono); }
+.settings-grid input:focus, .settings-grid select:focus { outline: 0; border-color: var(--cyan); }
+.start-notice { margin-bottom: 16px; padding: 16px 18px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(0,212,255,.28); border-radius: 7px; font: 10px var(--font-mono); }
 
 @media (max-width: 1050px) {
   .dashboard-grid, .stats-layout { grid-template-columns: 1fr; }
@@ -2404,6 +2411,7 @@ button.nav-item.active { border-left-color: var(--cyan); }
 }
 
 @media (max-width: 480px) {
+  .settings-grid { grid-template-columns: 1fr; }
   .refresh-btn { padding: 7px 8px; font-size: 0; }
   .refresh-btn::after { content: '↻'; font-size: 14px; }
   .hero-day { align-items: flex-start; flex-direction: column; gap: 12px; }

@@ -10,6 +10,7 @@ const State = {
   stats: null,
   history: [],
   noteActivityId: null,
+  settings: null,
 };
 
 const VIEW_META = {
@@ -107,12 +108,19 @@ function apiPost(path, body = {}) {
   return api(path, { method: 'POST', body: JSON.stringify(body) });
 }
 
+function apiPut(path, body = {}) {
+  return api(path, { method: 'PUT', body: JSON.stringify(body) });
+}
+
 async function refreshData({ quiet = false } = {}) {
   const date = todayISO();
   if (!quiet) showLoading('Sincronizando sua agenda...');
-  await apiPost('/api/schedule/generate', {
-    start_date: date, end_date: date, allocate: true,
-  });
+  State.settings = await api('/api/settings');
+  if (State.settings.configured && date >= State.settings.start_date) {
+    await apiPost('/api/schedule/generate', {
+      start_date: date, end_date: date, allocate: true,
+    });
+  }
   const [today, next, courses, stats, activities] = await Promise.all([
     api('/api/schedule/today'),
     api('/api/activities/next'),
@@ -121,8 +129,10 @@ async function refreshData({ quiet = false } = {}) {
     api('/api/activities?limit=500'),
   ]);
   Object.assign(State, { today, next, courses, stats, activities });
+  document.querySelector('.sidebar-brand .subtitle').innerHTML = `${escapeHtml(State.settings.display_name)}<br>Operações → SRE`;
   renderSidebar();
   await renderView();
+  if (!State.settings.configured) openSettings(true);
 }
 
 function renderSidebar() {
@@ -253,6 +263,7 @@ function renderToday() {
   const completedToday = State.today.slots.filter(slot => slot.status === 'completed').length;
   const typeClass = State.today.day_type.toLowerCase();
   document.getElementById('view-content').innerHTML = `
+    ${todayISO() < State.settings.start_date ? `<div class="start-notice">Sua trilha começa em ${escapeHtml(formatDate(State.settings.start_date, true))}. Até lá, você pode explorar e validar o painel.</div>` : ''}
     <section class="hero-day ${typeClass}">
       <div>
         <span class="eyebrow">${escapeHtml(formatDate(State.today.date, true))}</span>
@@ -504,6 +515,38 @@ function closeNote() {
   State.noteActivityId = null;
 }
 
+function openSettings(required = false) {
+  const settings = State.settings || {};
+  document.getElementById('setting-name').value = settings.display_name || '';
+  document.getElementById('setting-start').value = settings.start_date || todayISO();
+  document.getElementById('setting-anchor').value = settings.anchor_date || todayISO();
+  document.getElementById('setting-anchor-type').value = settings.anchor_day_type || 'FOLGA';
+  const cancel = document.getElementById('settings-cancel');
+  cancel.hidden = required;
+  document.getElementById('settings-modal').classList.add('open');
+  document.getElementById('setting-name').focus();
+}
+
+function closeSettings() {
+  if (!State.settings?.configured) return;
+  document.getElementById('settings-modal').classList.remove('open');
+}
+
+async function saveSettings(event) {
+  event.preventDefault();
+  try {
+    State.settings = await apiPut('/api/settings', {
+      display_name: document.getElementById('setting-name').value.trim(),
+      start_date: document.getElementById('setting-start').value,
+      anchor_date: document.getElementById('setting-anchor').value,
+      anchor_day_type: document.getElementById('setting-anchor-type').value,
+    });
+    document.getElementById('settings-modal').classList.remove('open');
+    showToast('Configuração salva');
+    await refreshData({ quiet: true });
+  } catch (error) { showToast(error.message, true); }
+}
+
 async function saveNote() {
   if (!State.noteActivityId) return;
   const note = document.getElementById('note-text').value.trim();
@@ -525,10 +568,13 @@ function showToast(message, error = false) {
 function bindEvents() {
   document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => navigate(item.dataset.view)));
   document.getElementById('refresh-button').addEventListener('click', () => refreshData());
+  document.getElementById('settings-button').addEventListener('click', () => openSettings(false));
+  document.getElementById('settings-cancel').addEventListener('click', closeSettings);
+  document.getElementById('settings-form').addEventListener('submit', saveSettings);
   document.getElementById('note-cancel').addEventListener('click', closeNote);
   document.getElementById('note-save').addEventListener('click', saveNote);
   document.getElementById('note-modal').addEventListener('click', event => { if (event.target.id === 'note-modal') closeNote(); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeNote(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeNote(); closeSettings(); } });
 }
 
 async function init() {

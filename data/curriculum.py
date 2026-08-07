@@ -25,6 +25,8 @@ import os
 from datetime import date
 from typing import Final, Literal, TypedDict
 
+import config  # noqa: F401  # carrega o .env antes das constantes
+
 
 # ============================================================================
 # Tipos

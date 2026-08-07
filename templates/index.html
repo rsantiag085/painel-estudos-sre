@@ -56,7 +56,10 @@
         <h1 id="view-title">⬡ Hoje</h1>
         <div class="header-meta" id="view-meta">Sua agenda sustentável de estudos</div>
       </div>
-      <button class="btn refresh-btn" id="refresh-button" type="button">↻ ATUALIZAR</button>
+      <div class="header-actions">
+        <button class="btn" id="settings-button" type="button">⚙ CONFIGURAR</button>
+        <button class="btn refresh-btn" id="refresh-button" type="button">↻ ATUALIZAR</button>
+      </div>
     </header>
     <div id="view-content" aria-live="polite">
       <div class="loading"><div class="spinner"></div>Carregando agenda...</div>
@@ -78,7 +81,24 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <form class="modal settings-modal" id="settings-form">
+      <div class="modal-title" id="settings-title">Configurar sua trilha</div>
+      <div class="modal-sub">Use uma data conhecida da sua escala 12x36. Os cursos permanecem iguais; agenda e progresso serão seus.</div>
+      <div class="settings-grid">
+        <label>Nome de exibição<input id="setting-name" maxlength="80" required></label>
+        <label>Início dos estudos<input id="setting-start" type="date" required></label>
+        <label>Data conhecida da escala<input id="setting-anchor" type="date" required></label>
+        <label>Tipo nessa data<select id="setting-anchor-type"><option value="FOLGA">Folga</option><option value="TRABALHO">Trabalho</option></select></label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" id="settings-cancel" type="button">CANCELAR</button>
+        <button class="btn btn-primary" type="submit">SALVAR CONFIGURAÇÃO</button>
+      </div>
+    </form>
+  </div>
+
   <div id="toast" role="status"></div>
-  <script src="/static/app.js?v=10"></script>
+  <script src="/static/app.js?v=11"></script>
 </body>
 </html>

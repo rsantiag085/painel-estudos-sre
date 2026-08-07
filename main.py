@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR))
 
 from database import create_tables, seed_curriculum_data, SessionLocal
-from routers import activities, courses, history, milestones, schedule, stats
+from routers import activities, courses, history, milestones, schedule, settings, stats
 
 
 # -- Lifespan (substitui on_event deprecado) ----------------------------------
@@ -56,6 +56,7 @@ app.include_router(schedule.router)
 app.include_router(history.router)
 app.include_router(stats.router)
 app.include_router(milestones.router)
+app.include_router(settings.router)
 
 
 @app.get("/", response_class=HTMLResponse)

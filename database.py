@@ -8,6 +8,8 @@ from pathlib import Path
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import declarative_base, sessionmaker
 
+import config  # noqa: F401  # carrega o .env antes de DATABASE_URL
+
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sre_tracker.db")
 
 engine = create_engine(
