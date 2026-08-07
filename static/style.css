@@ -2326,6 +2326,24 @@ button.nav-item.active { border-left-color: var(--cyan); }
 .course-card-stats { display: flex; justify-content: space-between; align-items: center; }
 .course-card-stats strong { color: var(--green); font: 700 13px var(--font-mono); }
 .course-card-stats span { color: var(--muted); font: 500 9px var(--font-mono); }
+.course-card-actions { display: flex; justify-content: flex-end; margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--border); }
+.course-source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  color: #9edff0;
+  background: rgba(0,212,255,.045);
+  border: 1px solid rgba(0,212,255,.24);
+  border-radius: 4px;
+  font: 700 8.5px var(--font-mono);
+  letter-spacing: .35px;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.course-source-link:hover { color: #e8fbff; background: rgba(0,212,255,.1); border-color: rgba(0,212,255,.48); }
+.course-source-link.disabled { color: var(--muted2); background: rgba(255,255,255,.02); border-color: var(--border); cursor: not-allowed; }
 
 .roadmap-dynamic { display: flex; flex-direction: column; gap: 10px; }
 .roadmap-phase-card { display: grid; grid-template-columns: 60px 1fr; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }

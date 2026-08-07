@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_frontend_has_all_dynamic_sections():
     html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
     for view in (
-        "today", "queue", "courses", "roadmap", "projects",
+        "today", "queue", "courses", "roadmap", "projects", "achievements",
         "aws", "google", "history", "stats",
     ):
         assert f'data-view="{view}"' in html
@@ -53,3 +53,31 @@ def test_today_view_uses_canonical_schedule_route_without_duplicate_prefix():
 
     assert "api('/api/schedule/today')" in javascript
     assert "/api/api/" not in javascript
+
+
+def test_course_cards_render_safe_external_source_links():
+    javascript = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+
+    assert "courseSourceAction(course)" in javascript
+    assert "isSafeExternalUrl(course.url)" in javascript
+    assert "^https?:\\/\\/" in javascript
+    assert 'target="_blank"' in javascript
+    assert 'rel="noopener noreferrer"' in javascript
+    assert "Abrir curso" in javascript
+    assert "Link não cadastrado" in javascript
+    assert 'aria-disabled="true"' in javascript
+    assert 'href=""' not in javascript
+
+
+def test_achievement_badges_remain_available_in_dynamic_frontend():
+    html = (ROOT / "templates" / "index.html").read_text(encoding="utf-8")
+    javascript = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+
+    assert 'data-view="achievements"' in html
+    assert "function computeBadges()" in javascript
+    assert "function renderAchievements()" in javascript
+    assert "function showBadgeCelebration(badge)" in javascript
+    assert "course.activities_done" in javascript
+    assert "State.stats?.by_phase" in javascript
+    assert "SRE Master" in javascript
+    assert "Badge conquistado!" in javascript

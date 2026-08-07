@@ -18,6 +18,7 @@ const VIEW_META = {
   courses:  ['▤ Cursos', 'Catálogo, prioridade e avanço por curso'],
   roadmap:  ['◇ Roadmap', 'Evolução por competência e fase'],
   projects: ['⌘ Projetos', 'Entregas práticas e itens de portfólio'],
+  achievements: ['🏅 Conquistas', 'Recompensas por cursos e fases concluídos'],
   aws:      ['☁ AWS re/Start', 'Trilha paralela de fundamentos AWS'],
   google:   ['G Google Cloud', 'Professional Cloud DevOps Engineer'],
   history:  ['↺ Histórico', 'Registro imutável das ações realizadas'],
@@ -30,6 +31,26 @@ const PHASE_NAMES = {
   3: 'CI/CD e Orquestração',
   4: 'Observabilidade e SRE',
   5: 'Especializações e Carreira',
+};
+
+const PHASE_BADGE_STYLE = [
+  ['🌱', '#00e5a0'], ['⚙️', '#5b8dee'], ['☁️', '#ff9900'],
+  ['🚀', '#9b78e8'], ['🏆', '#00d4ff'],
+];
+
+const COURSE_BADGE_STYLE = {
+  'linux-admin': ['🐧', '#00e5a0'], 'networks-devops': ['🌐', '#5b8dee'],
+  'git-github': ['🌿', '#00e5a0'], 'sql-intro': ['🗄️', '#5b8dee'],
+  'python-devops': ['🐍', '#ffab40'], docker: ['🐳', '#00d4ff'],
+  'aws-restart': ['☁️', '#ff9900'], 'aws-clf': ['🌩️', '#ff9900'],
+  'aws-saa': ['🏗️', '#ff9900'], 'terraform-essentials': ['🏛️', '#9b78e8'],
+  'ansible-sysadmin': ['⚙️', '#00e5a0'], 'github-actions': ['🔄', '#00d4ff'],
+  'kubernetes-completo': ['⎈', '#5b8dee'], 'flask-devops': ['🍶', '#ff6b35'],
+  'prometheus-grafana': ['🔥', '#ff4560'], opentelemetry: ['🔭', '#9b78e8'],
+  'sre-practices': ['🧠', '#00d4ff'], 'zabbix-7': ['🧪', '#ff6b35'],
+  'awx-sysadmin': ['🛠️', '#00e5a0'], 'devops-automacao': ['🤖', '#5b8dee'],
+  'devops-jornada': ['🧭', '#00d4ff'], 'devops-agentico': ['✨', '#9b78e8'],
+  'google-cloud-devops': ['G', '#5b8dee'],
 };
 
 const STATUS_LABELS = {
@@ -130,6 +151,17 @@ function showError(error) {
 
 function statusBadge(status) {
   return `<span class="status-pill status-${escapeHtml(status)}">${escapeHtml(STATUS_LABELS[status] || status)}</span>`;
+}
+
+function isSafeExternalUrl(value) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value.trim());
+}
+
+function courseSourceAction(course) {
+  if (!isSafeExternalUrl(course.url)) {
+    return '<span class="course-source-link disabled" aria-disabled="true">Link não cadastrado</span>';
+  }
+  return `<a class="course-source-link" href="${escapeHtml(course.url.trim())}" target="_blank" rel="noopener noreferrer">Abrir curso <span aria-hidden="true">↗</span></a>`;
 }
 
 function courseById(id) {
@@ -268,6 +300,7 @@ function renderCourses() {
       <p class="course-meta">${escapeHtml(course.provider)} · ${escapeHtml(course.execution)}</p>
       <div class="inline-progress"><i style="width:${course.progress_pct}%"></i></div>
       <div class="course-card-stats"><strong>${course.progress_pct}%</strong><span>${course.activities_done}/${course.activities_total} atividades</span></div>
+      <div class="course-card-actions">${courseSourceAction(course)}</div>
     </article>`).join('')}</div>`;
 }
 
@@ -289,6 +322,81 @@ function renderProjects() {
   document.getElementById('view-content').innerHTML = `
     <div class="filter-summary"><strong>${projects.length}</strong><span>entregas práticas para comprovar aprendizado</span></div>
     <div class="activity-list">${projects.map(item => activityCard(item)).join('')}</div>`;
+}
+
+function computeBadges() {
+  const courseBadges = State.courses.map(course => {
+    const [emoji, color] = COURSE_BADGE_STYLE[course.id] || ['🎓', '#00d4ff'];
+    const total = course.activities_total || 0;
+    const done = course.activities_done || 0;
+    return {
+      id: `course-${course.id}`, name: course.name, emoji, color, done, total,
+      pct: total ? Math.round(done / total * 100) : 0,
+      earned: total > 0 && done === total,
+    };
+  });
+  const phaseBadges = (State.stats?.by_phase || []).map(group => {
+    const phase = Number(group.id);
+    const [emoji, color] = PHASE_BADGE_STYLE[phase - 1] || ['🏅', '#00d4ff'];
+    return {
+      id: `phase-${phase}`, name: PHASE_NAMES[phase] || group.label,
+      emoji, color, done: group.done, total: group.total, pct: group.pct,
+      earned: group.total > 0 && group.pct === 100, phase,
+    };
+  });
+  const stats = State.stats || {};
+  const masterBadge = {
+    id: 'sre-master', name: 'SRE Master', emoji: '⭐', color: '#ffab40',
+    done: stats.done || 0, total: stats.total || 0, pct: stats.pct || 0,
+    earned: (stats.total || 0) > 0 && stats.pct === 100,
+  };
+  return { courseBadges, phaseBadges, masterBadge, all: [...phaseBadges, ...courseBadges, masterBadge] };
+}
+
+function badgeCard(badge, subtitle) {
+  const earned = badge.earned;
+  const cardStyle = earned ? `border-color:${badge.color}55;box-shadow:0 0 14px ${badge.color}22;background:linear-gradient(135deg,${badge.color}0a,transparent);` : '';
+  const nameStyle = earned ? `color:${badge.color}` : 'color:var(--muted2)';
+  const statusStyle = earned ? `color:${badge.color};background:${badge.color}15` : 'color:var(--muted2)';
+  return `<article class="badge-card ${earned ? 'earned' : 'locked'}" style="${cardStyle}">
+    <div class="badge-emoji">${badge.emoji}</div>
+    <div class="badge-name" style="${nameStyle}">${escapeHtml(badge.name)}</div>
+    <div class="badge-sub">${escapeHtml(subtitle)}</div>
+    <div class="badge-status" style="${statusStyle}">${earned ? '✓ CONQUISTADO' : '🔒 BLOQUEADO'}</div>
+  </article>`;
+}
+
+function renderAchievements() {
+  const { courseBadges, phaseBadges, masterBadge, all } = computeBadges();
+  const earned = all.filter(badge => badge.earned).length;
+  const pct = all.length ? Math.round(earned / all.length * 100) : 0;
+  document.getElementById('view-content').innerHTML = `
+    <section class="badges-summary">
+      <div class="badges-summary-num">${earned}<span>/${all.length}</span></div>
+      <div class="badges-summary-label">badges conquistados</div>
+      <div class="badges-prog-bar"><div class="badges-prog-fill" style="width:${pct}%"></div></div>
+    </section>
+    <div class="section-title">Fases concluídas</div>
+    <div class="badges-grid">${phaseBadges.map(badge => badgeCard(badge, `Fase ${badge.phase} · ${badge.pct}% · ${badge.done}/${badge.total} atividades`)).join('')}</div>
+    <div class="section-title">Cursos concluídos</div>
+    <div class="badges-grid">${courseBadges.map(badge => badgeCard(badge, `${badge.done}/${badge.total} atividades · ${badge.pct}%`)).join('')}</div>
+    <div class="section-title">Badge especial</div>
+    <div class="badges-grid">${badgeCard(masterBadge, `${masterBadge.done}/${masterBadge.total} atividades totais`)}</div>`;
+}
+
+function showBadgeCelebration(badge) {
+  const overlay = document.createElement('div');
+  overlay.className = 'badge-celebration';
+  overlay.innerHTML = `<div class="badge-celebration-inner" style="border-color:${badge.color}55">
+    <div class="badge-celebration-sparkles">✨ ✨ ✨</div>
+    <div class="badge-celebration-emoji">${badge.emoji}</div>
+    <div class="badge-celebration-title">Badge conquistado!</div>
+    <div class="badge-celebration-name" style="color:${badge.color}">${escapeHtml(badge.name)}</div>
+    <div class="badge-celebration-sub">Continue assim! 🚀</div>
+    <button class="btn btn-primary" type="button" onclick="this.closest('.badge-celebration').remove()">INCRÍVEL!</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('open'));
 }
 
 function renderTrack(courseId, emptyMessage) {
@@ -347,6 +455,7 @@ async function renderView() {
     const renderers = {
       today: renderToday, queue: renderQueue, courses: renderCourses,
       roadmap: renderRoadmap, projects: renderProjects,
+      achievements: renderAchievements,
       aws: () => renderTrack('aws-restart', 'A trilha AWS re/Start ainda não está disponível.'),
       google: () => renderTrack('google-cloud-devops', 'A trilha Google Cloud ainda não está disponível.'),
       history: renderHistory, stats: renderStats,
@@ -370,9 +479,14 @@ async function runAction(activityId, command, defaultNote = '') {
   const destructive = ['skip', 'cancel'].includes(command);
   if (destructive && !confirm('Confirma esta ação? A atividade sairá da fila ativa.')) return;
   try {
+    const earnedBefore = new Set(computeBadges().all.filter(badge => badge.earned).map(badge => badge.id));
     await apiPost(`/api/activities/${activityId}/${command}`, { note: defaultNote });
     showToast({ start: 'Atividade iniciada', complete: 'Atividade concluída', defer: 'Atividade realocada', block: 'Atividade bloqueada', skip: 'Atividade pulada', cancel: 'Atividade cancelada' }[command] || 'Atualizado');
     await refreshData({ quiet: true });
+    if (command === 'complete') {
+      const unlocked = computeBadges().all.find(badge => badge.earned && !earnedBefore.has(badge.id));
+      if (unlocked) showBadgeCelebration(unlocked);
+    }
   } catch (error) { showToast(error.message, true); }
 }
 

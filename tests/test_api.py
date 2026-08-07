@@ -17,7 +17,23 @@ def test_courses_and_activities_catalog_api(api_client):
 
     course = api_client.get("/api/courses/linux-admin")
     assert course.status_code == 200
+    assert course.json()["url"] == "https://www.udemy.com/course/adm-so-gnulinux/"
     assert course.json()["id"] == "linux-admin"
+
+    catalog_course = api_client.get("/api/courses/networks-devops")
+    assert catalog_course.status_code == 200
+    assert catalog_course.json()["url"].startswith("https://www.udemy.com/course/")
+
+    git_course = api_client.get("/api/courses/git-github")
+    assert git_course.status_code == 200
+    assert git_course.json()["url"] == (
+        "https://www.youtube.com/watch?v=84FhNXNWoig"
+        "&list=PLvlkVRRKOYFQyKmdrassLNxkzSMM6tcSL"
+    )
+
+    course_without_url = api_client.get("/api/courses/aws-restart")
+    assert course_without_url.status_code == 200
+    assert course_without_url.json()["url"] == ""
 
     activities = api_client.get(
         "/api/activities", params={"course_id": "linux-admin"}

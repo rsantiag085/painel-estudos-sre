@@ -14,6 +14,13 @@ def test_seed_populates_catalog_progress_and_settings(session):
     assert session.query(ActivityProgress).count() == len(ACTIVITIES)
     assert session.get(AppSetting, "curriculum.course_count").value == str(len(COURSES))
     assert session.get(AppSetting, "curriculum.activity_count").value == str(len(ACTIVITIES))
+    courses_with_url = session.query(Course).filter(Course.url != "").all()
+    courses_without_url = session.query(Course).filter(Course.url == "").all()
+    assert len(courses_with_url) == 21
+    assert {course.id for course in courses_without_url} == {
+        "aws-restart",
+        "opentelemetry",
+    }
 
 
 def test_seed_is_idempotent(session):
