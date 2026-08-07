@@ -94,7 +94,7 @@ class StudySlot(Base):
 
     __tablename__ = "study_slots"
 
-    id = Column(String, primary_key=True)  # ex.: 2026-08-05-F1
+    id = Column(String, primary_key=True)  # ex.: 2030-01-01-F1
     study_date = Column(Date, nullable=False, index=True)
     day_type = Column(String, nullable=False)
     slot_code = Column(String, nullable=False)

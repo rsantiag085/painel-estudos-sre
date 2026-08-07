@@ -1,8 +1,8 @@
-# Catálogo e Trilha de Estudos SRE — Robson Santiago
+# Catálogo e Trilha de Estudos SRE — Usuário do painel
 
 **Objetivo profissional:** transição de Analista de Monitoramento para SRE ou DevOps remoto  
 **Escala de referência:** 12x36  
-**Data-base da escala:** 05/08/2026 = FOLGA; 06/08/2026 = TRABALHO  
+**Data-base da escala:** configurável por `SCALE_ANCHOR_DATE`
 **Versão:** 3.0 — catálogo dinâmico, sem prazo final fixo
 
 ---
@@ -124,7 +124,7 @@ O período noturno de dias de trabalho não deve ser utilizado para compensar es
 ```python
 from datetime import date
 
-SCALE_ANCHOR = date(2026, 8, 5)  # FOLGA
+SCALE_ANCHOR = date(2030, 1, 1)  # FOLGA
 
 def get_day_type(current_date: date) -> str:
     days = (current_date - SCALE_ANCHOR).days
@@ -1191,6 +1191,6 @@ Essas informações devem ser produzidas dinamicamente pela aplicação.
 
 ---
 
-*Versão 3.0 — 05/08/2026*  
+*Versão 3.0 — agenda configurável*
 *Catálogo dinâmico para a escala 12x36*  
 *Objetivo: conhecimento consolidado, projetos verificáveis e transição sustentável para SRE/DevOps.*

@@ -1,4 +1,4 @@
-# SRE Tracker — Robson Santiago
+# SRE Tracker
 
 Aplicação local para organizar uma trilha de estudos de SRE/DevOps adaptada à escala 12x36.
 
@@ -12,7 +12,7 @@ O sistema deixa de operar como um calendário rígido e passa a trabalhar com:
 - projetos de portfólio;
 - histórico de execução.
 
-> **Data-base da escala:** 05/08/2026 = FOLGA  
+> **Data-base da escala:** definida por `SCALE_ANCHOR_DATE`
 > **Meta mínima:** 2h nas folgas e 1h nos dias de trabalho  
 > **Objetivo:** transição sustentável de Monitoramento para SRE/DevOps remoto
 
@@ -20,7 +20,7 @@ O sistema deixa de operar como um calendário rígido e passa a trabalhar com:
 
 ## Objetivo
 
-Preparar Robson para concorrer a vagas de:
+Preparar o usuário para concorrer a vagas de:
 
 - Site Reliability Engineer;
 - DevOps Engineer;
@@ -90,12 +90,13 @@ Cada curso deve gerar pelo menos um resultado concreto:
 
 ## Escala 12x36
 
-A escala é calculada pela sequência de dias corridos.
+A escala é calculada pela sequência de dias corridos. Copie `.env.example`
+para `.env` e informe uma data da sua própria escala que corresponda a uma folga.
 
 ```python
 from datetime import date
 
-SCALE_ANCHOR = date(2026, 8, 5)  # FOLGA
+SCALE_ANCHOR = date.fromisoformat(os.getenv("SCALE_ANCHOR_DATE", "2030-01-01"))
 
 def get_day_type(current_date: date) -> str:
     days = (current_date - SCALE_ANCHOR).days
@@ -395,8 +396,8 @@ uvicorn main:app --reload
 
 ```python
 {
-    "id": "2026-08-05-F1",
-    "study_date": "2026-08-05",
+    "id": "2030-01-01-F1",
+    "study_date": "2030-01-01",
     "day_type": "FOLGA",
     "slot_code": "F1",
     "start_time": "13:30",
@@ -412,10 +413,10 @@ uvicorn main:app --reload
 ```python
 {
     "activity_id": "linux-admin-sec03-lesson01",
-    "slot_id": "2026-08-05-F1",
+    "slot_id": "2030-01-01-F1",
     "event_type": "deferred",
     "note": "Atendimento inesperado",
-    "created_at": "2026-08-05T14:05:00",
+    "created_at": "2030-01-01T14:05:00",
 }
 ```
 
@@ -531,6 +532,6 @@ A candidatura pode começar quando houver domínio demonstrável de:
 
 ---
 
-*Versão 3.0 — 05/08/2026*  
+*Versão 3.0 — agenda configurável*
 *Cronograma dinâmico para escala 12x36*  
 *Conhecimento consolidado, projetos verificáveis e transição sustentável.*

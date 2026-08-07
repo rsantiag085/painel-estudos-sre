@@ -1,5 +1,5 @@
 # data/curriculum.py — Cronograma Final SRE (36 semanas)
-# Robson Santiago | NOC Sênior → SRE | Mai–Dez 2026
+# Usuário do painel | Profissional de Operações → SRE | Mai–Dez 2026
 
 """
 Estrutura do currículo:
@@ -272,7 +272,7 @@ def get_lessons_by_course(course_name):
 # ============================================================================
 # NOTA: Este é um TEMPLATE simplificado
 # A versão COMPLETA precisa incluir S04–S36 com todas as lições
-# Use cronograma_final_sre_robson.md como referência para preencher
+# Use a documentação pública do roadmap como referência para preencher
 # ============================================================================
 
 if __name__ == "__main__":

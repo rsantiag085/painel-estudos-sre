@@ -1,4 +1,4 @@
-def generate(client, start="2026-08-05", end="2026-08-07", allocate=False):
+def generate(client, start="2030-01-01", end="2030-01-03", allocate=False):
     return client.post(
         "/api/schedule/generate",
         json={"start_date": start, "end_date": end, "allocate": allocate},
@@ -54,22 +54,22 @@ def test_next_activity_api_uses_sequence_and_slot_compatibility(api_client):
     generate(api_client)
 
     response = api_client.get(
-        "/api/activities/next", params={"slot_id": "2026-08-05-F1"}
+        "/api/activities/next", params={"slot_id": "2030-01-01-F1"}
     )
     assert response.status_code == 200
     assert response.json()["id"] == "linux-admin-002"
 
 
 def test_schedule_generation_is_idempotent_and_queryable(api_client):
-    first = generate(api_client, end="2026-08-06")
-    second = generate(api_client, end="2026-08-06")
+    first = generate(api_client, end="2030-01-02")
+    second = generate(api_client, end="2030-01-02")
 
     assert first.status_code == 200
     assert first.json()["slots_created"] == 6
     assert second.json()["slots_created"] == 0
     assert second.json()["slots_existing"] == 6
 
-    today = api_client.get("/api/schedule/today", params={"date": "2026-08-05"})
+    today = api_client.get("/api/schedule/today", params={"date": "2030-01-01"})
     assert today.status_code == 200
     assert today.json()["day_type"] == "FOLGA"
     assert [slot["slot_code"] for slot in today.json()["slots"]] == [
@@ -78,7 +78,7 @@ def test_schedule_generation_is_idempotent_and_queryable(api_client):
 
     schedule_range = api_client.get(
         "/api/schedule/range",
-        params={"start_date": "2026-08-05", "end_date": "2026-08-06"},
+        params={"start_date": "2030-01-01", "end_date": "2030-01-02"},
     )
     assert schedule_range.status_code == 200
     assert len(schedule_range.json()["days"]) == 2
@@ -97,11 +97,11 @@ def test_schedule_today_canonical_route_without_date_parameter(api_client):
 def test_allocate_start_complete_and_history_api(api_client):
     generate(api_client)
     allocated = api_client.post(
-        "/api/schedule/slots/2026-08-05-F3/allocate",
+        "/api/schedule/slots/2030-01-01-F3/allocate",
         json={"activity_id": "linux-admin-001", "note": "planejada"},
     )
     assert allocated.status_code == 200
-    assert allocated.json()["current_slot_id"] == "2026-08-05-F3"
+    assert allocated.json()["current_slot_id"] == "2030-01-01-F3"
 
     started = api_client.post(
         "/api/activities/linux-admin-001/start", json={"note": "começando"}
@@ -114,7 +114,7 @@ def test_allocate_start_complete_and_history_api(api_client):
     )
     assert completed.status_code == 200
     assert completed.json()["status"] == "done"
-    assert completed.json()["current_slot_id"] == "2026-08-05-F3"
+    assert completed.json()["current_slot_id"] == "2030-01-01-F3"
 
     history = api_client.get("/api/activities/linux-admin-001/history")
     assert history.status_code == 200
@@ -129,7 +129,7 @@ def test_allocate_start_complete_and_history_api(api_client):
 def test_defer_api_records_history_and_reallocates(api_client):
     generate(api_client)
     api_client.post(
-        "/api/schedule/slots/2026-08-05-F3/allocate",
+        "/api/schedule/slots/2030-01-01-F3/allocate",
         json={"activity_id": "linux-admin-001"},
     )
 
@@ -139,7 +139,7 @@ def test_defer_api_records_history_and_reallocates(api_client):
 
     assert deferred.status_code == 200
     assert deferred.json()["status"] == "deferred"
-    assert deferred.json()["current_slot_id"] == "2026-08-05-F4"
+    assert deferred.json()["current_slot_id"] == "2030-01-01-F4"
     events = api_client.get(
         "/api/history", params={"activity_id": "linux-admin-001"}
     )
@@ -179,7 +179,7 @@ def test_add_note_without_changing_status(api_client):
 def test_stats_and_progress_grouping_api(api_client):
     generate(api_client)
     api_client.post(
-        "/api/schedule/slots/2026-08-05-F3/allocate",
+        "/api/schedule/slots/2030-01-01-F3/allocate",
         json={"activity_id": "linux-admin-001"},
     )
     api_client.post("/api/activities/linux-admin-001/complete", json={})

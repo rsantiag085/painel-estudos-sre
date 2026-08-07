@@ -35,7 +35,7 @@ def normalize_date(value: date | str) -> date:
 
 
 def day_type_for(value: date | str) -> str:
-    """Retorna FOLGA/TRABALHO pela diferença em dias para 05/08/2026."""
+    """Retorna FOLGA/TRABALHO em relação à âncora configurada."""
     current_date = normalize_date(value)
     elapsed_days = (current_date - SCALE_ANCHOR).days
     return "FOLGA" if elapsed_days % 2 == 0 else "TRABALHO"

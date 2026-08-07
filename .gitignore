@@ -3,8 +3,13 @@ __pycache__/
 *.pyo
 *.db
 .env
+.env.*
+!.env.example
 venv/
 .venv/
 *.egg-info/
 dist/
 build/
+.backups/
+.claude/
+*.bak

@@ -1,9 +1,7 @@
 # Manual do Projeto: Transição para SRE/DevOps
 
-**Responsável:** Robson Santiago de Oliveira  
-**Objetivo profissional:** conquistar uma oportunidade remota como SRE ou DevOps  
-**Escala de trabalho:** 12x36  
-**Data-base da escala:** 05/08/2026 = FOLGA  
+**Público:** profissionais em transição para SRE ou DevOps
+**Escala padrão:** 12x36, com data-base configurável
 **Versão:** 3.0 — cronograma dinâmico e sustentável
 
 ---
@@ -50,7 +48,7 @@ O objetivo não é dominar todas as ferramentas existentes. O objetivo é demons
 
 ## 2. Objetivo profissional
 
-O projeto busca preparar Robson para concorrer a vagas de:
+O projeto busca preparar o usuário para concorrer a vagas de:
 
 - Site Reliability Engineer;
 - DevOps Engineer;
@@ -61,10 +59,8 @@ O projeto busca preparar Robson para concorrer a vagas de:
 
 O alvo principal é uma oportunidade:
 
-- remota;
-- em horário comercial;
-- com menor desgaste de deslocamento;
-- compatível com maior convivência familiar;
+- compatível com seus objetivos profissionais;
+- sustentável em relação à rotina pessoal;
 - com possibilidade de evolução técnica.
 
 A formação deve ser sólida, mas não depende de um prazo final rígido.
@@ -79,8 +75,7 @@ O plano não deve comprometer:
 
 - sono;
 - saúde;
-- vida espiritual;
-- relacionamento com esposa e filhas;
+- vida pessoal;
 - responsabilidades domésticas;
 - trabalho atual.
 
@@ -168,17 +163,15 @@ A escala deve ser calculada pela sequência real de dias corridos.
 
 ### Data-base
 
-- 05/08/2026: FOLGA
-- 06/08/2026: TRABALHO
-- 07/08/2026: FOLGA
-- 08/08/2026: TRABALHO
+Cada instalação deve definir `SCALE_ANCHOR_DATE` com uma data conhecida como
+`FOLGA`. O valor `2030-01-01` abaixo é apenas um exemplo neutro.
 
 Implementação recomendada:
 
 ```python
 from datetime import date
 
-SCALE_ANCHOR = date(2026, 8, 5)
+SCALE_ANCHOR = date.fromisoformat(os.getenv("SCALE_ANCHOR_DATE", "2030-01-01"))
 
 def get_day_type(current_date: date) -> str:
     days = (current_date - SCALE_ANCHOR).days
@@ -202,7 +195,7 @@ Carga mínima: 2 horas, divididas em quatro blocos de 30 minutos.
 | F3 | 15h20–15h50 | laboratório |
 | F4 | 16h00–16h30 | laboratório, revisão ou AWS |
 
-O intervalo de espera próximo à escola pode ser usado para:
+Um intervalo livre opcional pode ser usado para:
 
 - flashcards;
 - leitura de documentação;
@@ -232,7 +225,7 @@ O período noturno deve priorizar:
 
 ### 6.3 Regra de sono
 
-Nos dias de trabalho, a meta é dormir entre 21h15 e 21h30 sempre que possível.
+Nos dias de trabalho, o descanso deve ser priorizado.
 
 Estudos não concluídos não devem ser compensados reduzindo o sono.
 
@@ -622,7 +615,7 @@ Para vagas SRE, também deve conseguir explicar:
 
 O resultado não será definido por uma data específica.
 
-O projeto será bem-sucedido quando Robson puder demonstrar que consegue:
+O projeto será bem-sucedido quando o usuário puder demonstrar que consegue:
 
 1. administrar e diagnosticar sistemas Linux;
 2. compreender redes e dependências;
@@ -647,5 +640,5 @@ A meta é tornar-se um profissional SRE ou DevOps competente, capaz de receber u
 
 ---
 
-*Versão 3.0 — 05/08/2026*  
+*Versão 3.0 — agenda configurável*
 *Transição sustentável de Monitoramento para SRE/DevOps*

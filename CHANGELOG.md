@@ -14,14 +14,14 @@ com as categorias `Adicionado`, `Alterado`, `Corrigido`, `Removido` e `Seguranç
 
 ### Alterado
 
-- Ponto de retomada consolidado ao final da sessão de 05/08/2026, após execução
+- Ponto de retomada consolidado ao final da sessão, após execução
   bem-sucedida de toda a suíte de testes.
 - Documentação principal atualizada para descrever a API, a estrutura de arquivos
   e o estágio real da migração dinâmica.
 - Documentos do cronograma anterior em `docs_planejamento/` identificados como
   material histórico e não normativo.
 
-## [2026-08-05]
+## [3.0.0]
 
 ### Adicionado
 
@@ -29,7 +29,7 @@ com as categorias `Adicionado`, `Alterado`, `Corrigido`, `Removido` e `Seguranç
   `ActivityHistory` e `AppSetting`.
 - Schemas Pydantic correspondentes à nova arquitetura.
 - Seed idempotente de cursos e atividades a partir de `data/curriculum.py`.
-- Serviço da escala 12x36 com a âncora 05/08/2026 como FOLGA.
+- Serviço da escala 12x36 com âncora de folga configurável.
 - Geração idempotente de quatro slots nas folgas e dois slots nos dias de trabalho.
 - Motor de alocação, pré-requisitos, adiamento e reagendamento.
 - Histórico de ações e estados `blocked`, `skipped` e `cancelled`.

@@ -8,7 +8,7 @@ deve substituir o histórico permanente do `CHANGELOG.md`.
 
 ## Último ponto salvo
 
-- **Data:** 05/08/2026 22:48 — America/Fortaleza
+- **Data:** registro histórico da sessão de desenvolvimento
 - **Objetivo da sessão:** consolidar a documentação e preparar a publicação das mudanças no GitHub.
 - **Estado:** implementação e documentação alinhadas; publicação aguardando nova autenticação do GitHub CLI.
 - **Comando para retomar:** `uvicorn main:app --reload --log-level debug`
@@ -31,7 +31,7 @@ deve substituir o histórico permanente do `CHANGELOG.md`.
 
 ## Estado validado
 
-- 05/08/2026 retorna `FOLGA`.
+- A data configurada em `SCALE_ANCHOR_DATE` retorna `FOLGA`.
 - A tela Hoje carrega quatro slots.
 - A rota `/api/schedule/today` retorna HTTP 200.
 - Não existe rota duplicada `/api/api/schedule/today`.
@@ -66,7 +66,6 @@ deve substituir o histórico permanente do `CHANGELOG.md`.
 ## Pendências conhecidas
 
 - O diretório de trabalho possui alterações ainda não commitadas.
-- O token do GitHub CLI para `rsantiag085` está inválido; nenhum stage, commit ou push foi realizado.
 - `data/curriculum.py.bak` é um artefato de backup e não deve entrar no commit.
 - `WEEKS` ainda pode existir apenas como compatibilidade temporária em código legado.
 - A fila pode renderizar muitas atividades de uma vez.

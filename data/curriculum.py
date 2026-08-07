@@ -2,7 +2,7 @@
 data/curriculum.py — Catálogo dinâmico do roadmap SRE/DevOps
 
 Versão 3.0
-Data-base da escala: 05/08/2026 = FOLGA
+Data-base da escala: configurável por ``SCALE_ANCHOR_DATE``
 
 Este módulo não distribui atividades em datas fixas.
 Ele define:
@@ -21,6 +21,7 @@ Os IDs das atividades são permanentes e não contêm datas.
 
 from __future__ import annotations
 
+import os
 from datetime import date
 from typing import Final, Literal, TypedDict
 
@@ -99,8 +100,10 @@ class MilestoneData(TypedDict):
 # Escala 12x36
 # ============================================================================
 
-SCALE_ANCHOR: Final[date] = date(2026, 8, 5)
-"""Data conhecida como FOLGA. A sequência alterna a cada dia corrido."""
+SCALE_ANCHOR: Final[date] = date.fromisoformat(
+    os.getenv("SCALE_ANCHOR_DATE", "2030-01-01")
+)
+"""Data configurável conhecida como FOLGA; usa um exemplo neutro por padrão."""
 
 FOLGA_SLOTS: Final[list[dict[str, object]]] = [
     {

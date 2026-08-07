@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
 # -- App ----------------------------------------------------------------------
 app = FastAPI(
     title="SRE Tracker",
-    description="Painel de Estudos SRE - Robson Santiago",
+    description="Painel de estudos SRE com agenda dinâmica",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -98,7 +98,7 @@ def _open_browser():
 if __name__ == "__main__":
     print()
     print("+---------------------------------------------+")
-    print("|  SRE Tracker -- Robson Santiago             |")
+    print("|  SRE Tracker -- Agenda dinâmica             |")
     print("|  http://localhost:8000                      |")
     print("|  Ctrl+C para parar                          |")
     print("+---------------------------------------------+")

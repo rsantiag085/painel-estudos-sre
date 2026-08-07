@@ -31,8 +31,8 @@ def test_new_and_legacy_tables_coexist(session):
 def test_slot_unique_per_date_and_code(session):
     session.add_all([
         StudySlot(
-            id="2026-08-05-F1",
-            study_date=date(2026, 8, 5),
+            id="2030-01-01-F1",
+            study_date=date(2030, 1, 1),
             day_type="FOLGA",
             slot_code="F1",
             start_time="13:30",
@@ -41,7 +41,7 @@ def test_slot_unique_per_date_and_code(session):
         ),
         StudySlot(
             id="outro-id",
-            study_date=date(2026, 8, 5),
+            study_date=date(2030, 1, 1),
             day_type="FOLGA",
             slot_code="F1",
             start_time="14:00",
@@ -57,8 +57,8 @@ def test_slot_unique_per_date_and_code(session):
 def test_history_and_pydantic_responses_from_orm(session):
     seed_curriculum(session)
     slot = StudySlot(
-        id="2026-08-05-F1",
-        study_date=date(2026, 8, 5),
+        id="2030-01-01-F1",
+        study_date=date(2030, 1, 1),
         day_type="FOLGA",
         slot_code="F1",
         start_time="13:30",
@@ -80,6 +80,6 @@ def test_history_and_pydantic_responses_from_orm(session):
     slot_schema = StudySlotResponse.model_validate(slot)
     event_schema = ActivityHistoryResponse.model_validate(event)
 
-    assert slot_schema.study_date == date(2026, 8, 5)
+    assert slot_schema.study_date == date(2030, 1, 1)
     assert event_schema.activity_id == "linux-admin-001"
     assert event_schema.study_slot_id == slot.id
