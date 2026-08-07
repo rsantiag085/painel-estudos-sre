@@ -180,7 +180,7 @@ function activityCard(activity, options = {}) {
         <span class="sequence-code">#${String(activity.sequence).padStart(3, '0')}</span>
         ${statusBadge(activity.status)}
       </div>
-      <h3>${escapeHtml(activity.name)}</h3>
+      <h3 class="activity-title">${escapeHtml(activity.name)}</h3>
       <p class="activity-course">${escapeHtml(course?.name || activity.course_id)}</p>
       <div class="activity-meta">
         <span>${activity.duration_minutes} min</span>
@@ -206,8 +206,8 @@ function slotCard(slot) {
           ${statusBadge(slot.status)}
         </div>
         ${activity ? `
-          <h3>${escapeHtml(activity.name)}</h3>
-          <p>${escapeHtml(courseById(activity.course_id)?.name || activity.course_id)}</p>
+          <h3 class="slot-activity-title">${escapeHtml(activity.name)}</h3>
+          <p class="slot-course-name">${escapeHtml(courseById(activity.course_id)?.name || activity.course_id)}</p>
           ${activityActions(activity, true)}
         ` : '<div class="slot-empty">Slot livre</div>'}
       </div>
@@ -264,8 +264,8 @@ function renderCourses() {
   document.getElementById('view-content').innerHTML = `<div class="course-grid">${State.courses.map(course => `
     <article class="dynamic-course-card">
       <div class="course-card-head"><span>FASE ${course.phase}</span>${statusBadge(course.status)}</div>
-      <h3>${escapeHtml(course.name)}</h3>
-      <p>${escapeHtml(course.provider)} · ${escapeHtml(course.execution)}</p>
+      <h3 class="course-title">${escapeHtml(course.name)}</h3>
+      <p class="course-meta">${escapeHtml(course.provider)} · ${escapeHtml(course.execution)}</p>
       <div class="inline-progress"><i style="width:${course.progress_pct}%"></i></div>
       <div class="course-card-stats"><strong>${course.progress_pct}%</strong><span>${course.activities_done}/${course.activities_total} atividades</span></div>
     </article>`).join('')}</div>`;
@@ -279,7 +279,7 @@ function renderRoadmap() {
     const pct = total ? Math.round(done / total * 100) : 0;
     return `<section class="roadmap-phase-card">
       <div class="phase-marker">${phase}</div>
-      <div class="phase-body"><span>FASE ${phase}</span><h2>${escapeHtml(PHASE_NAMES[phase])}</h2><p>${courses.map(course => escapeHtml(course.name)).join(' · ')}</p><div class="inline-progress"><i style="width:${pct}%"></i></div><small>${done}/${total} atividades · ${pct}%</small></div>
+      <div class="phase-body"><span>FASE ${phase}</span><h2>${escapeHtml(PHASE_NAMES[phase])}</h2><p class="roadmap-course-list">${courses.map(course => escapeHtml(course.name)).join(' · ')}</p><div class="inline-progress"><i style="width:${pct}%"></i></div><small>${done}/${total} atividades · ${pct}%</small></div>
     </section>`;
   }).join('')}</div>`;
 }
@@ -357,7 +357,11 @@ async function renderView() {
 
 async function navigate(view) {
   State.view = view;
-  document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.view === view));
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const active = item.dataset.view === view;
+    item.classList.toggle('active', active);
+    item.setAttribute('aria-current', active ? 'page' : 'false');
+  });
   showLoading();
   await renderView();
 }
