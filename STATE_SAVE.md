@@ -8,12 +8,12 @@ deve substituir o histórico permanente do `CHANGELOG.md`.
 
 ## Último ponto salvo
 
-- **Data:** registro histórico da sessão de desenvolvimento
-- **Objetivo da sessão:** consolidar a documentação e preparar a publicação das mudanças no GitHub.
-- **Estado:** implementação e documentação alinhadas; publicação aguardando nova autenticação do GitHub CLI.
-- **Comando para retomar:** `uvicorn main:app --reload --log-level debug`
+- **Data:** encerramento da sessão de configuração multiusuário
+- **Objetivo da sessão:** tornar o painel reutilizável por terceiros e publicar uma versão segura.
+- **Estado:** implementação, testes, documentação e publicação concluídos no branch `main`.
+- **Comando para retomar:** `python -m uvicorn main:app --host 127.0.0.1 --port 8000`
 - **Endereço local:** http://127.0.0.1:8000
-- **Última suíte executada:** `48 passed in 7.95s`
+- **Última suíte executada:** `51 passed in 8.78s`
 
 ## O que foi concluído
 
@@ -28,23 +28,25 @@ deve substituir o histórico permanente do `CHANGELOG.md`.
 - Atualização de `README.md`, `MANUAL_PROJETO_SRE.md` e `COURSES.md` conforme a implementação real.
 - Identificação de `docs_planejamento/` como arquivo histórico não normativo.
 - Criação e consolidação de `CHANGELOG.md` e deste ponto de retomada.
+- Configuração de primeiro acesso com nome, início e referência da escala.
+- Persistência das preferências de cada instalação em `AppSetting`.
+- Histórico Git higienizado e autoria vinculada ao `noreply` da conta GitHub.
+- Remoção de documentos pessoais e de uma cópia duplicada do catálogo.
 
 ## Estado validado
 
-- A data configurada em `SCALE_ANCHOR_DATE` retorna `FOLGA`.
+- A escala respeita a data e o tipo de dia configurados pelo usuário.
 - A tela Hoje carrega quatro slots.
 - A rota `/api/schedule/today` retorna HTTP 200.
 - Não existe rota duplicada `/api/api/schedule/today`.
-- O navegador carregou `app.js?v=7` sem painel de erro.
+- O navegador carregou o fluxo de configuração sem erros de console.
 
 ## Próximo passo recomendado
 
-1. Executar `gh auth login -h github.com`.
-2. Confirmar a autenticação com `gh auth status`.
-3. Criar a branch `agent/migracao-agenda-dinamica`.
-4. Revisar e versionar as mudanças, sem incluir `data/curriculum.py.bak`.
-5. Executar a suíte final, fazer push e abrir um Pull Request draft.
-6. Após a publicação, revisar a Fila e decidir sobre paginação, busca ou filtros.
+1. Concluir os testes manuais da agenda antes do início oficial dos estudos.
+2. Limpar os resultados criados durante os testes, preservando cursos e configurações.
+3. Revisar a Fila e decidir sobre paginação, busca ou filtros.
+4. Adicionar favicon e metadados visuais do repositório quando conveniente.
 
 ## Arquivos e áreas alteradas nesta etapa
 
@@ -65,8 +67,6 @@ deve substituir o histórico permanente do `CHANGELOG.md`.
 
 ## Pendências conhecidas
 
-- O diretório de trabalho possui alterações ainda não commitadas.
-- `data/curriculum.py.bak` é um artefato de backup e não deve entrar no commit.
 - `WEEKS` ainda pode existir apenas como compatibilidade temporária em código legado.
 - A fila pode renderizar muitas atividades de uma vez.
 - O favicon ainda não existe; `/favicon.ico` retorna 404 sem afetar a aplicação.

@@ -11,6 +11,8 @@ com as categorias `Adicionado`, `Alterado`, `Corrigido`, `Removido` e `Seguranç
 
 - Arquivo `STATE_SAVE.md` para registrar o ponto de retomada entre sessões de trabalho.
 - Procedimento de encerramento diário acionado pela frase **salvar o ponto**.
+- Fluxo de primeiro acesso para configurar nome, início e referência da escala 12x36.
+- API de configurações persistidas por instalação.
 
 ### Alterado
 
@@ -20,6 +22,7 @@ com as categorias `Adicionado`, `Alterado`, `Corrigido`, `Removido` e `Seguranç
   e o estágio real da migração dinâmica.
 - Documentos do cronograma anterior em `docs_planejamento/` identificados como
   material histórico e não normativo.
+- Agenda passou a respeitar a configuração local sem publicar dados pessoais.
 
 ## [3.0.0]
 
