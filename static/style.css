@@ -5,14 +5,14 @@
 
 :root {
   /* ── Fundos — azul-noite profundo, como telas de NOC ── */
-  --bg:       #0a0e17;   /* Space Navy — fundo principal */
-  --surface:  #0f1520;   /* Painel de dashboard */
-  --surface2: #141c2e;   /* Cards e inputs */
-  --surface3: #1a2440;   /* Hover states */
+  --bg:       #0d1420;   /* Space Navy — fundo principal respirável */
+  --surface:  #131d2b;   /* Painel de dashboard */
+  --surface2: #18243a;   /* Cards e inputs */
+  --surface3: #21304b;   /* Hover states */
 
   /* ── Bordas — tons de azul-aço ── */
-  --border:   #1e2d47;
-  --border2:  #2a4066;
+  --border:   #263a58;
+  --border2:  #365379;
 
   /* ── Texto ── */
   --text:     #dce8f8;   /* Azul-pérola — texto principal */
