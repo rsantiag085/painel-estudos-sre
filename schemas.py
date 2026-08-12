@@ -4,7 +4,7 @@ schemas.py — Pydantic schemas para request/response
 from datetime import date, datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 ActivityStatus = Literal[
@@ -16,7 +16,7 @@ ActivityStatus = Literal[
     "skipped",
     "cancelled",
 ]
-DayType = Literal["FOLGA", "TRABALHO"]
+DayType = Literal["FOLGA", "TRABALHO", "COMERCIAL"]
 SlotStatus = Literal["available", "scheduled", "completed", "missed", "cancelled"]
 
 
@@ -146,8 +146,25 @@ class AppSettingResponse(AppSettingBase, ORMResponse):
 class UserSettingsRequest(BaseModel):
     display_name: str = Field(min_length=1, max_length=80)
     start_date: date
+    work_schedule: Literal["12x36", "commercial"] = "12x36"
     anchor_date: date
     anchor_day_type: Literal["FOLGA", "TRABALHO"]
+    study_days: list[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4])
+    daily_study_minutes: int = Field(default=60, ge=30, le=480, multiple_of=30)
+
+    @field_validator("study_days")
+    @classmethod
+    def validate_study_days(cls, value: list[int]) -> list[int]:
+        days = sorted(set(value))
+        if any(day < 0 or day > 6 for day in days):
+            raise ValueError("study_days deve conter valores entre 0 e 6")
+        return days
+
+    @model_validator(mode="after")
+    def validate_commercial_schedule(self):
+        if self.work_schedule == "commercial" and not self.study_days:
+            raise ValueError("Selecione pelo menos um dia de estudo")
+        return self
 
 
 class UserSettingsResponse(UserSettingsRequest):

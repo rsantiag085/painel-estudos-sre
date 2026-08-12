@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="SRE Tracker — agenda dinâmica de estudos para escala 12x36">
+  <meta name="description" content="SRE Tracker — agenda dinâmica de estudos para escala 12x36 e horário comercial">
   <title>SRE Tracker — Agenda dinâmica</title>
-  <link rel="stylesheet" href="/static/style.css?v=9">
+  <link rel="stylesheet" href="/static/style.css?v=10">
 </head>
 <body>
   <aside id="sidebar">
@@ -82,23 +82,123 @@
   </div>
 
   <div class="modal-overlay" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-    <form class="modal settings-modal" id="settings-form">
-      <div class="modal-title" id="settings-title">Configurar sua trilha</div>
-      <div class="modal-sub">Use uma data conhecida da sua escala 12x36. Os cursos permanecem iguais; agenda e progresso serão seus.</div>
-      <div class="settings-grid">
-        <label>Nome de exibição<input id="setting-name" maxlength="80" required></label>
-        <label>Início dos estudos<input id="setting-start" type="date" required></label>
-        <label>Data conhecida da escala<input id="setting-anchor" type="date" required></label>
-        <label>Tipo nessa data<select id="setting-anchor-type"><option value="FOLGA">Folga</option><option value="TRABALHO">Trabalho</option></select></label>
+    <form class="modal settings-modal" id="settings-form" novalidate>
+
+      <!-- Indicador de etapas -->
+      <div class="wizard-steps" aria-hidden="true">
+        <div class="wizard-step active" data-step-indicator="1"><span>1</span></div>
+        <div class="wizard-connector"></div>
+        <div class="wizard-step" data-step-indicator="2"><span>2</span></div>
+        <div class="wizard-connector"></div>
+        <div class="wizard-step" data-step-indicator="3"><span>3</span></div>
+        <div class="wizard-connector"></div>
+        <div class="wizard-step" data-step-indicator="4"><span>4</span></div>
       </div>
-      <div class="modal-footer">
+
+      <!-- Etapa 1: Nome -->
+      <div class="wizard-pane active" data-step="1">
+        <div class="modal-title" id="settings-title">Olá! Vamos começar.</div>
+        <div class="modal-sub">Como você quer ser chamado na sua trilha de estudos?</div>
+        <div class="wizard-field">
+          <label for="setting-name">Seu nome</label>
+          <input id="setting-name" maxlength="80" placeholder="Ex: Robson" autocomplete="off">
+        </div>
+      </div>
+
+      <!-- Etapa 2: Data de início -->
+      <div class="wizard-pane" data-step="2">
+        <div class="modal-title">Quando você quer começar?</div>
+        <div class="modal-sub">Informe a data de início da sua trilha. Pode ser hoje ou uma data futura.</div>
+        <div class="wizard-field">
+          <label for="setting-start">Data de início dos estudos</label>
+          <input id="setting-start" type="date">
+        </div>
+      </div>
+
+      <!-- Etapa 3: Tipo de escala -->
+      <div class="wizard-pane" data-step="3">
+        <div class="modal-title">Como é sua rotina de trabalho?</div>
+        <div class="modal-sub">Isso define como seus slots de estudo serão distribuídos.</div>
+        <div class="schedule-type-cards">
+          <label class="schedule-type-card" id="card-commercial">
+            <input type="radio" name="setting-work-schedule" id="setting-work-schedule-commercial" value="commercial">
+            <div class="schedule-type-icon">🏢</div>
+            <div class="schedule-type-label">Horário comercial</div>
+            <div class="schedule-type-desc">Segunda a sexta, horários fixos. Você escolhe os dias e horas de estudo.</div>
+          </label>
+          <label class="schedule-type-card" id="card-12x36">
+            <input type="radio" name="setting-work-schedule" id="setting-work-schedule-12x36" value="12x36">
+            <div class="schedule-type-icon">🔄</div>
+            <div class="schedule-type-label">Escala 12×36</div>
+            <div class="schedule-type-desc">Trabalha 12h e folga 36h de forma alternada. O sistema calcula automaticamente.</div>
+          </label>
+        </div>
+        <!-- Campo oculto legado para compatibilidade -->
+        <input type="hidden" id="setting-work-schedule" value="">
+      </div>
+
+      <!-- Etapa 4a: Configuração comercial -->
+      <div class="wizard-pane" data-step="4" data-for-schedule="commercial">
+        <div class="modal-title">Seus dias de estudo</div>
+        <div class="modal-sub">Marque os dias da semana que você consegue estudar e quanto tempo por dia.</div>
+        <div class="wizard-field">
+          <span class="settings-label">Dias disponíveis para estudo</span>
+          <div class="weekday-options" style="margin-top:10px">
+            <label><input type="checkbox" name="setting-study-day" value="0">Seg</label>
+            <label><input type="checkbox" name="setting-study-day" value="1">Ter</label>
+            <label><input type="checkbox" name="setting-study-day" value="2">Qua</label>
+            <label><input type="checkbox" name="setting-study-day" value="3">Qui</label>
+            <label><input type="checkbox" name="setting-study-day" value="4">Sex</label>
+            <label><input type="checkbox" name="setting-study-day" value="5">Sáb</label>
+            <label><input type="checkbox" name="setting-study-day" value="6">Dom</label>
+          </div>
+        </div>
+        <div class="wizard-field" style="margin-top:16px">
+          <label for="setting-daily-hours">Horas de estudo por dia</label>
+          <select id="setting-daily-hours">
+            <option value="30">30 minutos</option>
+            <option value="60" selected>1 hora</option>
+            <option value="90">1 hora e 30 min</option>
+            <option value="120">2 horas</option>
+            <option value="180">3 horas</option>
+            <option value="240">4 horas</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Etapa 4b: Configuração 12x36 -->
+      <div class="wizard-pane" data-step="4" data-for-schedule="12x36">
+        <div class="modal-title">Calibre sua escala 12×36</div>
+        <div class="modal-sub">Informe uma data que você já sabe se é folga ou trabalho. O sistema deduz o resto automaticamente.</div>
+        <div class="wizard-field">
+          <label for="setting-anchor">Data de referência da escala</label>
+          <input id="setting-anchor" type="date">
+        </div>
+        <div class="wizard-field" style="margin-top:16px">
+          <label for="setting-anchor-type">Nessa data você está de...</label>
+          <select id="setting-anchor-type">
+            <option value="FOLGA">Folga (dia livre)</option>
+            <option value="TRABALHO">Trabalho (plantão 12h)</option>
+          </select>
+        </div>
+        <div class="wizard-info-box">
+          ⬡ Na escala 12×36, os dias de folga têm 4 slots de 30 min e os dias de trabalho têm 2 slots passivos.
+        </div>
+      </div>
+
+      <!-- Rodapé do wizard -->
+      <div class="modal-footer wizard-footer">
         <button class="btn" id="settings-cancel" type="button">CANCELAR</button>
-        <button class="btn btn-primary" type="submit">SALVAR CONFIGURAÇÃO</button>
+        <div class="wizard-nav">
+          <button class="btn" id="wizard-prev" type="button" hidden>← VOLTAR</button>
+          <button class="btn btn-primary" id="wizard-next" type="button">PRÓXIMO →</button>
+          <button class="btn btn-primary" id="wizard-submit" type="submit" hidden>✓ SALVAR</button>
+        </div>
       </div>
     </form>
   </div>
 
   <div id="toast" role="status"></div>
-  <script src="/static/app.js?v=11"></script>
+  <script src="/static/app.js?v=13"></script>
 </body>
 </html>

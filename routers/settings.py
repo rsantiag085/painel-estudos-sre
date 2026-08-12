@@ -25,9 +25,12 @@ async def update_settings(
 ):
     current = get_settings(db)
     scale_changed = (
-        payload.anchor_date != current["anchor_date"]
+        payload.work_schedule != current["work_schedule"]
+        or payload.anchor_date != current["anchor_date"]
         or payload.anchor_day_type != current["anchor_day_type"]
         or payload.start_date != current["start_date"]
+        or payload.study_days != current["study_days"]
+        or payload.daily_study_minutes != current["daily_study_minutes"]
     )
     if current["configured"] and scale_changed:
         future_slots = db.scalar(

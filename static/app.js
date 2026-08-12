@@ -90,6 +90,10 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
+function scheduleLabel(value) {
+  return value === 'commercial' ? 'Horário comercial' : 'Escala 12x36';
+}
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     ...options,
@@ -137,7 +141,9 @@ async function refreshData({ quiet = false } = {}) {
 
 function renderSidebar() {
   const stats = State.stats;
-  document.getElementById('sidebar-day-type').textContent = State.today?.day_type || '—';
+  document.getElementById('sidebar-day-type').textContent = State.today?.day_type === 'COMERCIAL'
+    ? 'COMERCIAL'
+    : State.today?.day_type || '—';
   document.getElementById('sidebar-date').textContent = formatDate(todayISO());
   document.getElementById('sidebar-pct-value').textContent = `${stats?.pct || 0}%`;
   document.getElementById('sidebar-mini-fill').style.width = `${stats?.pct || 0}%`;
@@ -262,13 +268,16 @@ function renderToday() {
   const deferred = State.activities.filter(item => item.status === 'deferred');
   const completedToday = State.today.slots.filter(slot => slot.status === 'completed').length;
   const typeClass = State.today.day_type.toLowerCase();
+  const dayMessage = State.today.day_type === 'COMERCIAL'
+    ? (State.today.slots.length ? 'Blocos definidos conforme seus dias e horas de estudo.' : 'Dia sem blocos de estudo configurados.')
+    : (State.today.day_type === 'FOLGA' ? 'Quatro blocos para avançar com calma.' : 'Dois blocos objetivos, preservando seu descanso.');
   document.getElementById('view-content').innerHTML = `
     ${todayISO() < State.settings.start_date ? `<div class="start-notice">Sua trilha começa em ${escapeHtml(formatDate(State.settings.start_date, true))}. Até lá, você pode explorar e validar o painel.</div>` : ''}
     <section class="hero-day ${typeClass}">
       <div>
         <span class="eyebrow">${escapeHtml(formatDate(State.today.date, true))}</span>
         <h2>${escapeHtml(State.today.day_type)}</h2>
-        <p>${State.today.day_type === 'FOLGA' ? 'Quatro blocos para avançar com calma.' : 'Dois blocos objetivos, preservando seu descanso.'}</p>
+        <p>${escapeHtml(dayMessage)}</p>
       </div>
       <div class="hero-day-score"><strong>${completedToday}/${State.today.slots.length}</strong><span>slots concluídos</span></div>
     </section>
@@ -515,12 +524,133 @@ function closeNote() {
   State.noteActivityId = null;
 }
 
+function selectedStudyDays() {
+  return [...document.querySelectorAll('input[name="setting-study-day"]:checked')]
+    .map(input => Number(input.value));
+}
+
+/* ============================================================
+ *  WIZARD DE CONFIGURAÇÃO (onboarding em etapas)
+ * ============================================================ */
+const Wizard = {
+  current: 1,
+  total: 4,
+  schedule: null,   // 'commercial' | '12x36'
+};
+
+function wizardSchedule() {
+  const checked = document.querySelector('input[name="setting-work-schedule"]:checked');
+  return checked ? checked.value : null;
+}
+
+function wizardUpdateUI() {
+  const step = Wizard.current;
+  const schedule = Wizard.schedule;
+
+  // Mostrar/ocultar painéis
+  document.querySelectorAll('.wizard-pane').forEach(pane => {
+    const paneStep = Number(pane.dataset.step);
+    const paneFor  = pane.dataset.forSchedule;
+    let visible = false;
+    if (paneStep < 4) {
+      visible = paneStep === step;
+    } else {
+      // Etapa 4: exibe o painel correspondente ao schedule escolhido
+      visible = step === 4 && (!paneFor || paneFor === schedule);
+    }
+    pane.classList.toggle('active', visible);
+  });
+
+  // Indicadores de progresso
+  const indicatorStep = step < 4 ? step : 4;
+  document.querySelectorAll('.wizard-step').forEach(el => {
+    const n = Number(el.dataset.stepIndicator);
+    el.classList.toggle('active', n === indicatorStep);
+    el.classList.toggle('done', n < indicatorStep);
+  });
+  document.querySelectorAll('.wizard-connector').forEach((el, i) => {
+    el.classList.toggle('done', i + 1 < indicatorStep);
+  });
+
+  // Botões de navegação
+  document.getElementById('wizard-prev').hidden = step <= 1;
+  document.getElementById('wizard-next').hidden = step >= Wizard.total;
+  document.getElementById('wizard-submit').hidden = step < Wizard.total;
+}
+
+function wizardValidateStep() {
+  const step = Wizard.current;
+  if (step === 1) {
+    const name = document.getElementById('setting-name').value.trim();
+    if (!name) { showToast('Informe seu nome para continuar', true); return false; }
+  }
+  if (step === 2) {
+    const dt = document.getElementById('setting-start').value;
+    if (!dt) { showToast('Escolha uma data de início', true); return false; }
+  }
+  if (step === 3) {
+    const sel = wizardSchedule();
+    if (!sel) { showToast('Selecione sua rotina de trabalho', true); return false; }
+    Wizard.schedule = sel;
+    document.getElementById('setting-work-schedule').value = sel;
+  }
+  if (step === 4) {
+    if (Wizard.schedule === 'commercial') {
+      const days = selectedStudyDays();
+      if (!days.length) { showToast('Selecione pelo menos um dia de estudo', true); return false; }
+    }
+    if (Wizard.schedule === '12x36') {
+      const anchor = document.getElementById('setting-anchor').value;
+      if (!anchor) { showToast('Informe a data de referência da escala', true); return false; }
+    }
+  }
+  return true;
+}
+
+function wizardNext() {
+  if (!wizardValidateStep()) return;
+  if (Wizard.current < Wizard.total) {
+    Wizard.current++;
+    wizardUpdateUI();
+    // Focus no primeiro input visível da nova etapa
+    const pane = document.querySelector('.wizard-pane.active');
+    if (pane) { const inp = pane.querySelector('input, select'); if (inp) inp.focus(); }
+  }
+}
+
+function wizardPrev() {
+  if (Wizard.current > 1) {
+    Wizard.current--;
+    wizardUpdateUI();
+  }
+}
+
 function openSettings(required = false) {
   const settings = State.settings || {};
+  Wizard.current = 1;
+  Wizard.schedule = settings.work_schedule || null;
+
+  // Popula campos com valores existentes
   document.getElementById('setting-name').value = settings.display_name || '';
   document.getElementById('setting-start').value = settings.start_date || todayISO();
   document.getElementById('setting-anchor').value = settings.anchor_date || todayISO();
   document.getElementById('setting-anchor-type').value = settings.anchor_day_type || 'FOLGA';
+  document.getElementById('setting-daily-hours').value = String(settings.daily_study_minutes || 60);
+  document.getElementById('setting-work-schedule').value = settings.work_schedule || '';
+
+  // Marca radio do schedule
+  document.querySelectorAll('input[name="setting-work-schedule"]').forEach(r => {
+    r.checked = r.value === (settings.work_schedule || '');
+  });
+
+  // Marca dias da semana
+  const selectedDays = new Set(settings.study_days || [0, 1, 2, 3, 4]);
+  document.querySelectorAll('input[name="setting-study-day"]').forEach(input => {
+    input.checked = selectedDays.has(Number(input.value));
+  });
+
+  wizardUpdateUI();
+
   const cancel = document.getElementById('settings-cancel');
   cancel.hidden = required;
   document.getElementById('settings-modal').classList.add('open');
@@ -534,15 +664,25 @@ function closeSettings() {
 
 async function saveSettings(event) {
   event.preventDefault();
+  if (!wizardValidateStep()) return;
+  const workSchedule = document.getElementById('setting-work-schedule').value;
+  const studyDays = workSchedule === 'commercial' ? selectedStudyDays() : [0, 1, 2, 3, 4];
+  if (workSchedule === 'commercial' && studyDays.length === 0) {
+    showToast('Selecione pelo menos um dia de estudo', true);
+    return;
+  }
   try {
     State.settings = await apiPut('/api/settings', {
       display_name: document.getElementById('setting-name').value.trim(),
       start_date: document.getElementById('setting-start').value,
-      anchor_date: document.getElementById('setting-anchor').value,
-      anchor_day_type: document.getElementById('setting-anchor-type').value,
+      work_schedule: workSchedule,
+      anchor_date: document.getElementById('setting-anchor').value || document.getElementById('setting-start').value,
+      anchor_day_type: document.getElementById('setting-anchor-type').value || 'FOLGA',
+      study_days: studyDays,
+      daily_study_minutes: Number(document.getElementById('setting-daily-hours').value),
     });
     document.getElementById('settings-modal').classList.remove('open');
-    showToast('Configuração salva');
+    showToast(`Configuração salva: ${scheduleLabel(State.settings.work_schedule)}`);
     await refreshData({ quiet: true });
   } catch (error) { showToast(error.message, true); }
 }
@@ -569,6 +709,11 @@ function bindEvents() {
   document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => navigate(item.dataset.view)));
   document.getElementById('refresh-button').addEventListener('click', () => refreshData());
   document.getElementById('settings-button').addEventListener('click', () => openSettings(false));
+  document.querySelectorAll('input[name="setting-work-schedule"]').forEach(r =>
+    r.addEventListener('change', () => { Wizard.schedule = wizardSchedule(); })
+  );
+  document.getElementById('wizard-next').addEventListener('click', wizardNext);
+  document.getElementById('wizard-prev').addEventListener('click', wizardPrev);
   document.getElementById('settings-cancel').addEventListener('click', closeSettings);
   document.getElementById('settings-form').addEventListener('submit', saveSettings);
   document.getElementById('note-cancel').addEventListener('click', closeNote);

@@ -127,6 +127,42 @@ def test_settings_onboarding_personalizes_scale_and_start_date(api_client):
     assert len(second.json()["slots"]) == 4
 
 
+def test_settings_supports_commercial_schedule(api_client):
+    saved = api_client.request(
+        "PUT",
+        "/api/settings",
+        json={
+            "display_name": "João",
+            "start_date": "2031-02-10",
+            "work_schedule": "commercial",
+            "anchor_date": "2031-02-10",
+            "anchor_day_type": "TRABALHO",
+            "study_days": [0, 2, 4],
+            "daily_study_minutes": 90,
+        },
+    )
+    assert saved.status_code == 200
+    assert saved.json()["work_schedule"] == "commercial"
+    assert saved.json()["study_days"] == [0, 2, 4]
+
+    generated = generate(api_client, start="2031-02-10", end="2031-02-11")
+
+    assert generated.status_code == 200
+    assert generated.json()["slots_created"] == 3
+
+    monday = api_client.get("/api/schedule/today", params={"date": "2031-02-10"})
+    tuesday = api_client.get("/api/schedule/today", params={"date": "2031-02-11"})
+    assert monday.json()["day_type"] == "COMERCIAL"
+    assert [slot["slot_code"] for slot in monday.json()["slots"]] == ["C1", "C2", "C3"]
+    assert [slot["start_time"] for slot in monday.json()["slots"]] == [
+        "19:00",
+        "19:30",
+        "20:00",
+    ]
+    assert tuesday.json()["day_type"] == "COMERCIAL"
+    assert tuesday.json()["slots"] == []
+
+
 def test_allocate_start_complete_and_history_api(api_client):
     generate(api_client)
     allocated = api_client.post(

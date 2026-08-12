@@ -62,6 +62,48 @@ def slot_definitions_for(
     return [dict(slot) for slot in slots]
 
 
+def commercial_slot_definitions_for(daily_study_minutes: int) -> list[dict[str, object]]:
+    """Retorna blocos de 30 min para estudos após horário comercial."""
+    blocks = daily_study_minutes // 30
+    start_minutes = 19 * 60
+    slots = []
+    for index in range(blocks):
+        total_minutes = start_minutes + index * 30
+        slots.append(
+            {
+                "code": f"C{index + 1}",
+                "label": "Horário comercial — estudo",
+                "start_time": f"{total_minutes // 60:02d}:{total_minutes % 60:02d}",
+                "duration_minutes": 30,
+                "slot_type": "ANY",
+            }
+        )
+    return slots
+
+
+def day_type_for_settings(current_date: date | str, settings: dict) -> str:
+    if settings.get("work_schedule") == "commercial":
+        return "COMERCIAL"
+    return day_type_for(
+        current_date,
+        settings["anchor_date"],
+        settings["anchor_day_type"],
+    )
+
+
+def slot_definitions_for_settings(current_date: date | str, settings: dict):
+    if settings.get("work_schedule") == "commercial":
+        current = normalize_date(current_date)
+        if current.weekday() not in settings.get("study_days", []):
+            return []
+        return commercial_slot_definitions_for(settings["daily_study_minutes"])
+    return slot_definitions_for(
+        current_date,
+        settings["anchor_date"],
+        settings["anchor_day_type"],
+    )
+
+
 def _dates_between(start_date: date, end_date: date):
     current = start_date
     while current <= end_date:
@@ -92,12 +134,8 @@ def generate_slots(
 
     desired: list[dict[str, object]] = []
     for current_date in _dates_between(start, end):
-        day_type = day_type_for(
-            current_date, settings["anchor_date"], settings["anchor_day_type"]
-        )
-        for definition in slot_definitions_for(
-            current_date, settings["anchor_date"], settings["anchor_day_type"]
-        ):
+        day_type = day_type_for_settings(current_date, settings)
+        for definition in slot_definitions_for_settings(current_date, settings):
             slot_code = str(definition["code"])
             desired.append(
                 {

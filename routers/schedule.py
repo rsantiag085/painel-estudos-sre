@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -16,7 +16,7 @@ from schemas import (
     ScheduleGenerateResponse,
     ScheduleRangeResponse,
 )
-from services.scale_service import day_type_for, generate_slots
+from services.scale_service import day_type_for_settings, generate_slots
 from services.settings_service import get_settings
 from services.scheduling_service import (
     SchedulingConflict,
@@ -39,9 +39,7 @@ def _schedule_days(slots, start_date, end_date, settings):
     while current <= end_date:
         days.append({
             "date": current,
-            "day_type": day_type_for(
-                current, settings["anchor_date"], settings["anchor_day_type"]
-            ),
+            "day_type": day_type_for_settings(current, settings),
             "slots": grouped[current],
         })
         current += timedelta(days=1)
@@ -79,9 +77,12 @@ async def generate_schedule(payload: ScheduleGenerateRequest, db: Session = Depe
 
 @router.get("/today", response_model=ScheduleDayResponse)
 async def get_today(
-    on_date: date = Query(default_factory=date.today, alias="date"),
+    on_date: date = Query(default=None, alias="date"),
     db: Session = Depends(get_db),
 ):
+    if on_date is None:
+        # Usa o fuso do sistema operacional — evita o bug UTC em processos root
+        on_date = datetime.now(timezone.utc).astimezone().date()
     slots = _slots_in_range(db, on_date, on_date)
     return _schedule_days(slots, on_date, on_date, get_settings(db))[0]
 

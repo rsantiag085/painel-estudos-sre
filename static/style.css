@@ -2384,6 +2384,164 @@ button.nav-item.active { border-left-color: var(--cyan); }
 .settings-grid label { color: var(--muted); font: 700 9px var(--font-mono); letter-spacing: .4px; text-transform: uppercase; }
 .settings-grid input, .settings-grid select { width: 100%; margin-top: 7px; padding: 11px; color: var(--text); background: var(--surface2); border: 1px solid var(--border2); border-radius: 5px; font: 11px var(--font-mono); }
 .settings-grid input:focus, .settings-grid select:focus { outline: 0; border-color: var(--cyan); }
+.settings-commercial { grid-column: 1 / -1; }
+.settings-commercial[hidden], .settings-12x36[hidden] { display: none; }
+.settings-label { display: block; color: var(--muted); font: 700 9px var(--font-mono); letter-spacing: .4px; text-transform: uppercase; }
+.weekday-options { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; margin-top: 7px; }
+.weekday-options label { display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 8px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 5px; font-size: 9px; cursor: pointer; transition: border-color .15s, background .15s; }
+.weekday-options label:has(input:checked) { border-color: var(--cyan); background: var(--cyan-dim); }
+.weekday-options input { width: auto; margin: 0; accent-color: var(--cyan); }
+
+/* ── WIZARD ───────────────────────────────────────────────── */
+.wizard-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 28px;
+}
+.wizard-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface3);
+  border: 2px solid var(--border2);
+  color: var(--muted2);
+  font: 700 11px var(--font-mono);
+  transition: background .25s, border-color .25s, color .25s;
+  flex-shrink: 0;
+}
+.wizard-step.active {
+  background: var(--cyan-dim);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+.wizard-step.done {
+  background: rgba(0,229,160,.12);
+  border-color: var(--green);
+  color: var(--green);
+}
+.wizard-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  max-width: 60px;
+  transition: background .25s;
+}
+.wizard-connector.done { background: var(--green); }
+
+.wizard-pane {
+  display: none;
+  animation: wizardFadeIn .22s ease;
+}
+.wizard-pane.active { display: block; }
+
+@keyframes wizardFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.wizard-field {
+  margin-top: 20px;
+}
+.wizard-field label,
+.wizard-field > span.settings-label {
+  display: block;
+  color: var(--muted);
+  font: 700 9px var(--font-mono);
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.wizard-field input,
+.wizard-field select {
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  font: 13px var(--font-mono);
+  transition: border-color .15s;
+}
+.wizard-field input:focus,
+.wizard-field select:focus {
+  outline: 0;
+  border-color: var(--cyan);
+}
+
+/* Cards de seleção de escala (etapa 3) */
+.schedule-type-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 22px;
+}
+.schedule-type-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px 16px;
+  background: var(--surface2);
+  border: 2px solid var(--border2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color .18s, background .18s;
+}
+.schedule-type-card:hover {
+  border-color: var(--border2);
+  background: var(--surface3);
+}
+.schedule-type-card:has(input:checked) {
+  border-color: var(--cyan);
+  background: var(--cyan-dim);
+}
+.schedule-type-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.schedule-type-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+.schedule-type-label {
+  color: var(--text);
+  font: 700 12px var(--font-sans);
+}
+.schedule-type-desc {
+  color: var(--muted);
+  font: 9.5px var(--font-mono);
+  line-height: 1.55;
+}
+
+/* Caixa informativa (etapa 4 12x36) */
+.wizard-info-box {
+  margin-top: 18px;
+  padding: 13px 15px;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  border: 1px solid rgba(0,212,255,.25);
+  border-radius: 6px;
+  font: 9.5px var(--font-mono);
+  line-height: 1.6;
+}
+
+/* Rodapé wizard */
+.wizard-footer {
+  justify-content: space-between;
+  align-items: center;
+}
+.wizard-nav {
+  display: flex;
+  gap: 8px;
+}
 .start-notice { margin-bottom: 16px; padding: 16px 18px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(0,212,255,.28); border-radius: 7px; font: 10px var(--font-mono); }
 
 @media (max-width: 1050px) {
@@ -2412,6 +2570,7 @@ button.nav-item.active { border-left-color: var(--cyan); }
 
 @media (max-width: 480px) {
   .settings-grid { grid-template-columns: 1fr; }
+  .weekday-options { grid-template-columns: repeat(4, 1fr); }
   .refresh-btn { padding: 7px 8px; font-size: 0; }
   .refresh-btn::after { content: '↻'; font-size: 14px; }
   .hero-day { align-items: flex-start; flex-direction: column; gap: 12px; }

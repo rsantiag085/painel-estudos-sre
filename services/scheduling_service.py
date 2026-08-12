@@ -33,6 +33,7 @@ SLOT_CAPABILITIES = {
     "T1": {"THEORY"},
     "T2": {"REVIEW", "AWS", "READING"},
 }
+COMMERCIAL_SLOT_CAPABILITIES = {"THEORY", "PRACTICE", "REVIEW", "AWS", "READING", "ANY"}
 
 
 class SchedulingError(ValueError):
@@ -45,11 +46,18 @@ class SchedulingConflict(SchedulingError):
 
 def is_slot_compatible(activity: Activity, slot: StudySlot) -> bool:
     """Verifica preferência de dia e capacidade do slot."""
-    if activity.preferred_day_type not in ("ANY", slot.day_type):
+    if slot.day_type != "COMERCIAL" and activity.preferred_day_type not in (
+        "ANY",
+        slot.day_type,
+    ):
         return False
     if activity.preferred_slot == "ANY":
         return True
-    capabilities = SLOT_CAPABILITIES.get(slot.slot_code, {slot.slot_type})
+    capabilities = (
+        COMMERCIAL_SLOT_CAPABILITIES
+        if slot.day_type == "COMERCIAL"
+        else SLOT_CAPABILITIES.get(slot.slot_code, {slot.slot_type})
+    )
     return activity.preferred_slot in capabilities
 
 

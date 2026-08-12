@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__/
+.pytest_cache/
+.backups/
+.agents/
+.codex/
+.claude/
+tests/
+docs_planejamento/
+*.pyc
+*.pyo
+*.db
+.env
