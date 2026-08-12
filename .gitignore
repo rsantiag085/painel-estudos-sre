@@ -13,3 +13,18 @@ build/
 .backups/
 .claude/
 *.bak
+
+# Ferramentas de IA
+.agents/
+.codex/
+
+# Cache de testes
+.pytest_cache/
+
+# Arquivos binários e rascunhos de planejamento
+docs_planejamento/*.docx
+docs_planejamento/curriculum_py_template.py
+
+# Logs locais
+nohup.out
+*.log
