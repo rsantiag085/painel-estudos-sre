@@ -13,6 +13,7 @@ from services.scheduling_service import (
     defer_activity,
     mark_in_progress,
     next_eligible_activity,
+    reopen_activity,
     set_inactive_status,
     update_activity_note,
 )
@@ -157,3 +158,12 @@ async def save_activity_note(
     db: Session = Depends(get_db),
 ):
     return _command(db, update_activity_note, activity_id, payload.note)
+
+
+@router.post("/{activity_id}/reopen", response_model=ActivityView)
+async def reopen_activity_endpoint(
+    activity_id: str,
+    payload: ActivityCommandRequest,
+    db: Session = Depends(get_db),
+):
+    return _command(db, reopen_activity, activity_id, payload.note)

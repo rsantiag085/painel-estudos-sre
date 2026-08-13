@@ -438,3 +438,30 @@ def update_activity_note(
     )
     session.flush()
     return progress
+
+
+def reopen_activity(
+    session: Session, activity_id: str, *, note: str = ""
+) -> ActivityProgress:
+    """Reverte uma atividade (concluída ou em andamento por engano) para pendente."""
+    progress = session.get(ActivityProgress, activity_id)
+    if progress is None:
+        raise SchedulingError(f"Atividade {activity_id} não encontrada")
+
+    old_status = progress.status
+    progress.status = "pending"
+    progress.completed_at = None
+    if progress.current_slot is not None:
+        progress.current_slot.status = "scheduled"
+
+    _history(
+        session,
+        progress,
+        "reopened",
+        slot_id=progress.current_slot_id,
+        from_status=old_status,
+        to_status="pending",
+        note=note or "Atividade reaberta",
+    )
+    session.flush()
+    return progress

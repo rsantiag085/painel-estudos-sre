@@ -205,10 +205,16 @@ function activityActions(activity, compact = false) {
   if (activity.current_slot_id && ['pending', 'deferred'].includes(activity.status)) {
     buttons.push(actionButton('▶ Iniciar', `onclick="runAction('${id}','start')"`, 'primary'));
   }
+  if (activity.current_slot_id && activity.status === 'in_progress') {
+    buttons.push(actionButton('↩ Desfazer início', `onclick="runAction('${id}','reopen','Início desfeito')"`));
+  }
   if (activity.current_slot_id && !['done', 'skipped', 'cancelled'].includes(activity.status)) {
     buttons.push(actionButton('✓ Concluir', `onclick="runAction('${id}','complete')"`, 'success'));
     buttons.push(actionButton('✕ Não fiz', `onclick="runAction('${id}','defer','Não realizado')"`, 'danger'));
     if (!compact) buttons.push(actionButton('↪ Adiar', `onclick="runAction('${id}','defer','Adiada pelo usuário')"`));
+  }
+  if (activity.status === 'done') {
+    buttons.push(actionButton('↩ Reabrir', `onclick="runAction('${id}','reopen','Reaberto pelo usuário')"`));
   }
   if (!['done', 'skipped', 'cancelled'].includes(activity.status)) {
     buttons.push(actionButton('⊘ Bloquear', `onclick="runAction('${id}','block')"`));
@@ -501,7 +507,7 @@ async function runAction(activityId, command, defaultNote = '') {
   try {
     const earnedBefore = new Set(computeBadges().all.filter(badge => badge.earned).map(badge => badge.id));
     await apiPost(`/api/activities/${activityId}/${command}`, { note: defaultNote });
-    showToast({ start: 'Atividade iniciada', complete: 'Atividade concluída', defer: 'Atividade realocada', block: 'Atividade bloqueada', skip: 'Atividade pulada', cancel: 'Atividade cancelada' }[command] || 'Atualizado');
+    showToast({ start: 'Atividade iniciada', complete: 'Atividade concluída', defer: 'Atividade realocada', block: 'Atividade bloqueada', skip: 'Atividade pulada', cancel: 'Atividade cancelada', reopen: 'Atividade reaberta' }[command] || 'Atualizado');
     await refreshData({ quiet: true });
     if (command === 'complete') {
       const unlocked = computeBadges().all.find(badge => badge.earned && !earnedBefore.has(badge.id));

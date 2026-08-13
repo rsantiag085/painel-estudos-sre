@@ -194,6 +194,13 @@ def test_allocate_start_complete_and_history_api(api_client):
         "/api/activities/linux-admin-001/defer", json={"note": "não pode"}
     ).status_code == 409
 
+    reopened = api_client.post(
+        "/api/activities/linux-admin-001/reopen", json={"note": "reabrindo"}
+    )
+    assert reopened.status_code == 200
+    assert reopened.json()["status"] == "pending"
+    assert reopened.json()["current_slot_id"] == "2030-01-01-F3"
+
 
 def test_defer_api_records_history_and_reallocates(api_client):
     generate(api_client)
