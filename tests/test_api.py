@@ -8,7 +8,7 @@ def generate(client, start="2030-01-01", end="2030-01-03", allocate=False):
 def test_courses_and_activities_catalog_api(api_client):
     courses = api_client.get("/api/courses")
     assert courses.status_code == 200
-    assert len(courses.json()) == 23
+    assert len(courses.json()) == 22
     assert courses.json()[0]["activities_total"] > 0
 
     phase_one = api_client.get("/api/courses", params={"phase": 1})
@@ -255,7 +255,7 @@ def test_stats_and_progress_grouping_api(api_client):
 
     summary = api_client.get("/api/progress/summary")
     assert summary.status_code == 200
-    assert summary.json()["total"] == 300
+    assert summary.json()["total"] == 298
     assert summary.json()["done"] == 1
     assert summary.json()["minutes_completed"] == 30
     assert summary.json()["execution_rate_pct"] == 100
@@ -274,15 +274,15 @@ def test_stats_and_progress_grouping_api(api_client):
 def test_read_only_legacy_progress_and_extended_export(api_client):
     progress = api_client.get("/api/progress")
     assert progress.status_code == 200
-    assert len(progress.json()) == 300
+    assert len(progress.json()) == 298
     assert progress.json()[0]["lesson_id"]
 
     exported = api_client.get("/api/export")
     assert exported.status_code == 200
     assert exported.json()["schema_version"] == "3.0"
     assert "progress" in exported.json()  # formato legado
-    assert len(exported.json()["dynamic"]["activities"]) == 300
-    assert len(exported.json()["dynamic"]["activity_progress"]) == 300
+    assert len(exported.json()["dynamic"]["activities"]) == 298
+    assert len(exported.json()["dynamic"]["activity_progress"]) == 298
 
     assert api_client.get("/api/progress/week/1").status_code == 404
     assert api_client.get("/api/deferred").status_code == 404

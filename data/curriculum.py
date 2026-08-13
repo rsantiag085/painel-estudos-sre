@@ -327,7 +327,7 @@ COURSES: Final[list[CourseData]] = [
         "phase": 2,
         "status": "in_progress",
         "prerequisites": [],
-        "notes": "Trilha paralela obrigatória enquanto estiver ativa.",
+        "notes": "Trilha paralela obrigatória com prazo: encerra ~25/09/2026. Aulas presenciais seg–sex das 19h às 20h (registro manual no painel).",
     },
     {
         "id": "aws-clf",
@@ -335,12 +335,12 @@ COURSES: Final[list[CourseData]] = [
         "provider": "Cloud Basics Academy",
         "url": "https://cloudbasics.academy/plataforma/cursos/2732",
         "video_hours": 11.40,
-        "priority": "low",
-        "execution": "selective",
+        "priority": "high",
+        "execution": "full",
         "phase": 2,
         "status": "available",
-        "prerequisites": [],
-        "notes": "Usar seletivamente como nivelamento. Certificação não obrigatória.",
+        "prerequisites": ["aws-restart"],
+        "notes": "Acesso expira em 25/10/2026. Iniciar após o encerramento do AWS re/Start (~25/09). Cursar completo dentro da janela de acesso.",
     },
     {
         "id": "aws-saa",
@@ -510,19 +510,7 @@ COURSES: Final[list[CourseData]] = [
         ],
         "notes": "Priorizar integração multi-cloud, KEDA, pipelines e troubleshooting.",
     },
-    {
-        "id": "devops-jornada",
-        "name": "SRE DevOps: Jornada do Início ao Fim",
-        "provider": "Udemy",
-        "url": "https://www.udemy.com/course/jornada-devops-sre-do-inicio-ao-fim/",
-        "video_hours": 4.03,
-        "priority": "low",
-        "execution": "optional",
-        "phase": 5,
-        "status": "available",
-        "prerequisites": [],
-        "notes": "Usar apenas como visão panorâmica.",
-    },
+
     {
         "id": "devops-agentico",
         "name": "DevOps Agêntico: Sem Enrolação",
@@ -1065,15 +1053,6 @@ _add_course_units(
     tag="integration",
 )
 
-# Jornada panorâmica
-_add_course_units(
-    "devops-jornada",
-    [
-        ("001", "Visão panorâmica do fluxo DevOps/SRE", "lesson", "THEORY"),
-        ("002", "Revisão arquitetural das integrações", "review", "REVIEW"),
-    ],
-    tag="overview",
-)
 
 # DevOps agêntico
 _add_course_units(

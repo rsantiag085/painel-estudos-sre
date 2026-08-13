@@ -50,6 +50,21 @@ ACTIVITY_FIELDS = (
     "required",
 )
 
+# Campos que podem ser atualizados em atividades já existentes.
+# 'sequence' é excluída: é imutável após a criação; tentar atualizá-la em banco
+# existente causa conflito UNIQUE quando há atividades removidas do currículo.
+ACTIVITY_UPDATE_FIELDS = (
+    "course_id",
+    "name",
+    "duration_minutes",
+    "activity_type",
+    "preferred_day_type",
+    "preferred_slot",
+    "prerequisites",
+    "tags",
+    "required",
+)
+
 
 def _copy_mutable(value):
     return list(value) if isinstance(value, list) else value
@@ -121,7 +136,7 @@ def seed_curriculum(session: Session) -> SeedResult:
             )
             session.add(row)
             counts["activities_created"] += 1
-        elif _update_changed(row, source, ACTIVITY_FIELDS):
+        elif _update_changed(row, source, ACTIVITY_UPDATE_FIELDS):
             counts["activities_updated"] += 1
 
     session.flush()
