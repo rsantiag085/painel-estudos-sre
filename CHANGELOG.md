@@ -7,22 +7,29 @@ com as categorias `Adicionado`, `Alterado`, `Corrigido`, `Removido` e `Seguranç
 
 ## [Não lançado]
 
+## [3.1.0]
+
 ### Adicionado
 
-- Arquivo `STATE_SAVE.md` para registrar o ponto de retomada entre sessões de trabalho.
-- Procedimento de encerramento diário acionado pela frase **salvar o ponto**.
-- Fluxo de primeiro acesso para configurar nome, início e referência da escala 12x36.
-- API de configurações persistidas por instalação.
+- Endpoint `POST /api/activities/{activity_id}/reopen` para reverter atividades concluídas ou iniciadas por engano de volta para o estado pendente.
+- Botão `↩ Reabrir` em cards de atividades concluídas e `↩ Desfazer início` em atividades em andamento no frontend.
+- Templates públicos de configuração pessoal `MANUAL_PROJETO_SRE.example.md` e `STATE_SAVE.example.md`.
+- Suporte a Docker Compose com persistência por bind mount do arquivo SQLite (`sre_tracker.db`) no host.
+- Testes automatizados para o fluxo de reabertura de atividades (totalizando 52 testes na suíte).
 
 ### Alterado
 
-- Ponto de retomada consolidado ao final da sessão, após execução
-  bem-sucedida de toda a suíte de testes.
-- Documentação principal atualizada para descrever a API, a estrutura de arquivos
-  e o estágio real da migração dinâmica.
-- Documentos do cronograma anterior em `docs_planejamento/` identificados como
-  material histórico e não normativo.
-- Agenda passou a respeitar a configuração local sem publicar dados pessoais.
+- Currículo oficial (`data/curriculum.py` e `COURSES.md`):
+  - `aws-restart`: prazo oficial fixado para ~25/09/2026 e registro de aulas seg–sex 19h–20h.
+  - `aws-clf`: promovido para prioridade alta e execução integral, com pré-requisito `aws-restart` e janela de acesso até 25/10/2026.
+- `services/curriculum_seed.py`: campo `sequence` tornado imutável durante atualizações do catálogo, prevenindo colisões de chave UNIQUE.
+- `docker-compose.yml`: variáveis sensíveis e data âncora agora são lidas dinamicamente do `.env`.
+- `.gitignore`: arquivos pessoais (`MANUAL_PROJETO_SRE.md`, `STATE_SAVE.md`, `GEMINI.md`, `*.db.bak-*`) adicionados para proteção contra vazamento.
+- `README.md`: documentação completa com instruções de execução via Docker Compose, gestão de arquivos de configuração pessoal e tabela da API atualizada.
+
+### Removido
+
+- Curso `devops-jornada` (e suas atividades associadas) removido do currículo e migrado no banco de dados.
 
 ## [3.0.0]
 

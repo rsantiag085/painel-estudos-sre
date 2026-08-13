@@ -352,9 +352,9 @@ Projeto:
 
 ### 7. AWS re/Start — Campinho Digital
 
-- **Situação:** em andamento
+- **Situação:** em andamento (**prazo: ~25/09/2026**)
 - **Tipo:** trilha paralela obrigatória
-- **Horário:** aulas 19h00–20h20 e módulos no Canvas
+- **Horário:** aulas presenciais seg–sex das 19h às 20h (registro manual no painel) e módulos no Canvas
 - **Objetivo:** fundamentos operacionais de AWS e preparação para a trilha de cloud.
 
 Regras:
@@ -369,22 +369,18 @@ Regras:
 
 - **Plataforma:** Cloud Basics Academy
 - **Carga:** 11h24
-- **Prioridade:** baixa
-- **Execução:** seletiva
+- **Prioridade:** alta (**janela de acesso até 25/10/2026**)
+- **Execução:** integral
+- **Pré-requisito:** concluir o AWS re/Start (~25/09)
 - **URL:** https://cloudbasics.academy/plataforma/cursos/2732
 
 Uso recomendado:
 
-- nivelamento;
-- infraestrutura global;
-- responsabilidade compartilhada;
-- IAM;
-- custos;
-- CloudWatch, CloudTrail e AWS Config.
+- Iniciar imediatamente após o encerramento do AWS re/Start (~25/09);
+- cursar integralmente dentro da janela de acesso de 30 dias (até 25/10/2026);
+- consolidação de IAM, VPC, S3, EC2, CloudWatch, Billing e arquitetura global.
 
-Não é necessário realizar a certificação CLF-C02 antes da SAA-C03.
-
-Carga sugerida: 6 a 8 horas.
+Não é obrigatório realizar o exame pago do CLF-C02 antes da SAA-C03, mas o curso deve ser concluído na íntegra enquanto o acesso estiver ativo.
 
 ---
 
@@ -894,32 +890,7 @@ Priorizar:
 
 Pular ou acelerar fundamentos já cobertos.
 
-Este curso substitui o uso do curso curto “SRE DevOps: Jornada do início ao fim” como integrador.
-
----
-
-### 21. SRE DevOps: Jornada do Início ao Fim
-
-- **Plataforma:** Udemy
-- **Carga:** 4h02
-- **Prioridade:** baixa
-- **Execução:** opcional e panorâmica
-- **URL:** https://www.udemy.com/course/jornada-devops-sre-do-inicio-ao-fim/
-
-Pode ser usado apenas para visão arquitetural.
-
-Não utilizar como fonte principal de:
-
-- Terraform;
-- Kubernetes;
-- observabilidade;
-- SRE;
-- GitOps;
-- segurança.
-
----
-
-### 22. DevOps Agêntico: Sem Enrolação
+### 21. DevOps Agêntico: Sem Enrolação
 
 - **Plataforma:** Udemy
 - **Carga:** 4h59
@@ -1191,6 +1162,6 @@ Essas informações devem ser produzidas dinamicamente pela aplicação.
 
 ---
 
-*Versão 3.0 — agenda configurável*
+*Versão 3.1 — currículo com prazos, Docker Compose e seed robusto*  
 *Catálogo dinâmico para a escala 12x36*  
 *Objetivo: conhecimento consolidado, projetos verificáveis e transição sustentável para SRE/DevOps.*

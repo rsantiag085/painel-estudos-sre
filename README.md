@@ -462,6 +462,7 @@ pytest -v
 | `POST` | `/api/activities/{activity_id}/skip` | pular atividade |
 | `POST` | `/api/activities/{activity_id}/cancel` | cancelar atividade |
 | `POST` | `/api/activities/{activity_id}/note` | adicionar nota sem mudar o estado |
+| `POST` | `/api/activities/{activity_id}/reopen` | reabrir atividade concluída/iniciada por engano |
 
 ### Agenda e escala
 
