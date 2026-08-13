@@ -1,3 +1,9 @@
+# Arquivos de configuração pessoal — cada um tem uma versão .example.md no repo.
+# Copie o .example.md correspondente, remova o aviso e preencha com seus dados.
+MANUAL_PROJETO_SRE.md
+STATE_SAVE.md
+GEMINI.md
+
 __pycache__/
 *.pyc
 *.pyo
@@ -13,6 +19,7 @@ build/
 .backups/
 .claude/
 *.bak
+*.db.bak-*
 
 # Ferramentas de IA
 .agents/

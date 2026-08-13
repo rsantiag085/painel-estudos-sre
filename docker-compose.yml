@@ -1,7 +1,8 @@
 services:
   painel-estudos-sre:
     container_name: sre-tracker
-    image: rsantiag085/painel-estudos-sre:v3.3
+    # Para publicar sua própria imagem, substitua pelo seu usuário:
+    # image: <seu-usuario-dockerhub>/painel-estudos-sre:v3.3
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,10 +13,12 @@ services:
       - "8000:8000"
     environment:
       - APP_VERSION=v3.3
-      - SCALE_ANCHOR_DATE=2026-01-01
+      # Configure sua data âncora da escala 12x36 no arquivo .env (não commitar).
+      # Exemplo: SCALE_ANCHOR_DATE=2030-01-01 (substitua por uma data de FOLGA conhecida).
+      - SCALE_ANCHOR_DATE=${SCALE_ANCHOR_DATE:-2030-01-01}
       - DATABASE_URL=sqlite:///./sre_tracker.db
-    # Opção de persistência:
-    # 1. Bind mount direto do arquivo SQLite no host (certifique-se de que o arquivo existe antes do primeiro up: `touch sre_tracker.db`)
+    # Bind mount: garante que o banco de dados persiste no host.
+    # Execute `touch sre_tracker.db` antes do primeiro `docker compose up`.
     volumes:
       - ./sre_tracker.db:/app/sre_tracker.db
     healthcheck:

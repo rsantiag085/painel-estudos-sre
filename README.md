@@ -252,17 +252,27 @@ Demonstrar:
 
 ## Trilhas paralelas
 
-### AWS re/Start
+### AWS re/Start — Campinho Digital
 
-Enquanto estiver ativo, o AWS re/Start faz parte da carga oficial do cronograma.
+Trilha paralela obrigatória com **prazo de encerramento: ~25/09/2026**.
 
-A aplicação deve permitir registrar:
+As aulas acontecem de **segunda a sexta, das 19h às 20h** (registro manual no painel).
 
-- aulas;
+A aplicação permite registrar:
+
+- aulas (slot de registro manual);
 - módulos do Canvas;
 - exercícios;
 - revisões;
 - pendências.
+
+### Preparatório AWS Cloud Practitioner CLF-C02
+
+Curso sequencial ao AWS re/Start. **Acesso expira em 25/10/2026.**
+
+- Iniciar após o encerramento do re/Start (~25/09);
+- cursar completo dentro da janela de acesso (≈ 30 dias);
+- prioridade `high` — não adiar.
 
 ### Google Cloud Skills
 
@@ -286,15 +296,117 @@ Frequência sugerida:
 
 ---
 
-## Como executar
+## Arquivos de configuração pessoal
 
-### Requisitos
+Alguns arquivos contêm informações específicas de cada instalação (rotina, objetivos,
+notas de sessão) e **não são versionados** — cada um está no `.gitignore`.
+
+O repositório fornece versões de exemplo com o sufixo `.example.md`. Antes de usar
+a aplicação, copie cada um e preencha com seus dados:
+
+| Arquivo a criar | Template disponível | O que configurar |
+|---|---|---|
+| `MANUAL_PROJETO_SRE.md` | `MANUAL_PROJETO_SRE.example.md` | Rotina, objetivos, horários de estudo |
+| `STATE_SAVE.md` | `STATE_SAVE.example.md` | Ponto de retomada entre sessões de dev |
+| `.env` | `.env.example` | Data âncora da escala (`SCALE_ANCHOR_DATE`) |
+
+```bash
+# Exemplo: copiar e editar o manual
+cp MANUAL_PROJETO_SRE.example.md MANUAL_PROJETO_SRE.md
+# Abra o arquivo e substitua os placeholders [...] com suas informações
+
+# Copiar e editar o ponto de retomada
+cp STATE_SAVE.example.md STATE_SAVE.md
+
+# Copiar e editar as variáveis de ambiente
+cp .env.example .env
+# Defina SCALE_ANCHOR_DATE com uma data real de FOLGA da sua escala
+```
+
+> Esses arquivos ficam apenas na sua máquina local. Qualquer `git push` os ignora automaticamente.
+
+---
+
+
+Existem dois modos de execução. O **Docker Compose é o método recomendado** para uso
+cotidiano — isola dependências e garante persistência automática do banco de dados.
+
+---
+
+### Modo 1 — Docker Compose (recomendado)
+
+#### Requisitos
+
+- Docker e Docker Compose instalados.
+
+#### Primeiro uso
+
+```bash
+cd ~/projetos/painel-estudos-sre
+
+# Garante que o arquivo de banco existe antes do primeiro up
+touch sre_tracker.db
+
+docker compose up -d
+```
+
+A aplicação ficará disponível em:
+
+```text
+http://localhost:8000
+```
+
+O arquivo `docker-compose.yml` já configura:
+
+- publicação da porta `8000` no host;
+- bind mount do `sre_tracker.db` (seus dados nunca ficam dentro da imagem);
+- restart automático (`unless-stopped`);
+- health check a cada 60 s.
+
+#### Atualizar a aplicação sem perder dados
+
+```bash
+# 1. Backup de segurança
+cp sre_tracker.db sre_tracker.db.bak-$(date +%Y%m%d-%H%M)
+
+# 2. Rebuild com o código novo
+docker compose build
+
+# 3. Recria o container (o banco no host não é tocado)
+docker compose up -d
+```
+
+> **Nota:** se um curso for removido do currículo, as atividades e progresso
+> associados não são deletados automaticamente (proteção contra perda acidental).
+> Para remover registros órfãos do banco, execute uma migração manual com
+> `sqlite3 sre_tracker.db` antes de subir a nova imagem.
+
+#### Comandos úteis
+
+```bash
+# Ver status e porta publicada
+docker compose ps
+
+# Acompanhar logs em tempo real
+docker compose logs -f --tail=30
+
+# Parar sem remover o container
+docker compose stop
+
+# Parar e remover o container (banco permanece no host)
+docker compose down
+```
+
+---
+
+### Modo 2 — Python local (desenvolvimento)
+
+#### Requisitos
 
 - Python 3.12 ou compatível;
-- ambiente virtual recomendado;
-- SQLite para desenvolvimento local.
+- ambiente virtual recomendado.
 
-### Instalação
+#### Instalação
 
 ```bash
 cd ~/projetos/painel-estudos-sre
@@ -305,22 +417,28 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Inicialização
+#### Inicialização
 
 ```bash
+# Abre o navegador automaticamente
 python main.py
+
+# Ou com hot-reload para desenvolvimento
+uvicorn main:app --reload
 ```
 
-A aplicação deve ficar disponível em:
+A aplicação ficará disponível em:
 
 ```text
 http://localhost:8000
 ```
 
-Caso o projeto utilize Uvicorn diretamente:
+#### Testes
 
 ```bash
-uvicorn main:app --reload
+pytest
+# ou com verbose
+pytest -v
 ```
 
 ---
@@ -441,12 +559,13 @@ uvicorn main:app --reload
 
 ```text
 painel-estudos-sre/
-├── main.py
-├── models.py
-├── schemas.py
-├── database.py
+├── main.py                  # Entrypoint: FastAPI + lifespan + seed + abre browser
+├── models.py                # Modelos ORM (SQLAlchemy)
+├── schemas.py               # Schemas Pydantic
+├── database.py              # Engine SQLite, SessionLocal, create_tables
+├── config.py                # Leitura de variáveis de ambiente
 ├── data/
-│   └── curriculum.py
+│   └── curriculum.py        # FONTE OFICIAL de COURSES, ACTIVITIES e MILESTONES
 ├── routers/
 │   ├── activities.py
 │   ├── courses.py
@@ -455,17 +574,25 @@ painel-estudos-sre/
 │   ├── progress.py
 │   ├── stats.py
 │   ├── milestones.py
+│   ├── settings.py
+│   ├── deferred.py
+│   ├── notes.py
 │   └── serializers.py
 ├── services/
 │   ├── curriculum_seed.py
 │   ├── scale_service.py
 │   ├── scheduling_service.py
-│   └── reporting_service.py
+│   ├── reporting_service.py
+│   └── settings_service.py
 ├── templates/
 │   └── index.html
 ├── static/
 │   ├── app.js
 │   └── style.css
+├── tests/
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
 ├── COURSES.md
 ├── MANUAL_PROJETO_SRE.md
 ├── CHANGELOG.md
@@ -485,7 +612,10 @@ painel-estudos-sre/
 - motor de alocação e reagendamento;
 - API dinâmica e compatibilidade de exportação;
 - frontend com Hoje, Fila, Cursos, Roadmap, Projetos, trilhas, Histórico e Estatísticas;
-- testes unitários, de integração e de contrato do frontend.
+- testes unitários, de integração e de contrato do frontend;
+- Docker Compose com bind mount para persistência do banco;
+- currículo ajustado: prazos do AWS re/Start (~25/09) e CLF-C02 (acesso até 25/10);
+- seed robusto: `sequence` não é atualizada em atividades existentes (evita conflito UNIQUE).
 
 ### Próximas melhorias
 
@@ -547,6 +677,6 @@ A candidatura pode começar quando houver domínio demonstrável de:
 
 ---
 
-*Versão 3.0 — agenda configurável*
+*Versão 3.1 — currículo com prazos, Docker Compose e seed robusto*  
 *Cronograma dinâmico para escala 12x36*  
 *Conhecimento consolidado, projetos verificáveis e transição sustentável.*
